@@ -2,7 +2,7 @@
 Alembic environment configuration.
 """
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, create_engine
 from sqlalchemy import pool
 from alembic import context
 import os
@@ -27,7 +27,8 @@ if config.config_file_name is not None:
 
 # Get database URL from settings
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Disable interpolation to handle URL-encoded characters (like %40 for @)
+config.attributes['sqlalchemy.url'] = settings.DATABASE_URL
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -51,7 +52,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # Get URL from attributes to avoid interpolation issues
+    url = config.attributes.get('sqlalchemy.url') or config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
