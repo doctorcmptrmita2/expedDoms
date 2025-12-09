@@ -23,7 +23,6 @@ def domains_list(
     request: Request,
     date_filter: Optional[date] = Query(None, alias="date"),
     tld: Optional[str] = Query(None),
-    show_all: bool = Query(False, description="Show all domains regardless of date"),
     future_days: int = Query(7, ge=1, le=30, description="Days to look ahead for future drops"),
     db: Session = Depends(get_db)
 ):
@@ -43,21 +42,18 @@ def domains_list(
         # Get all active TLDs for filter
         active_tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
         
-        # Determine date to show
+        # Determine date to show - default: show all domains
         if date_filter:
             selected_date = date_filter
-        elif not show_all:
-            # Get latest drop date from database
-            latest_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
-            if latest_date:
-                selected_date = latest_date
+        # If no date filter, show all domains (selected_date remains None)
         
-        # Get dropped domains
+        # Get dropped domains - show all if no date filter
         query_dropped = db.query(DroppedDomain).join(Tld)
         
-        # Apply date filter only if not showing all
-        if not show_all and selected_date:
+        # Apply date filter only if date is specified
+        if selected_date:
             query_dropped = query_dropped.filter(DroppedDomain.drop_date == selected_date)
+        # If selected_date is None, show all domains (no date filter)
         
         # Apply TLD filter
         if tld:
@@ -155,7 +151,6 @@ def domains_list(
         "active_tlds": active_tlds,
         "selected_date": selected_date,
         "selected_tld": selected_tld,
-        "show_all": show_all,
         "future_days": future_days,
         "dropped_domains": dropped_domains,
         "future_domains": future_domains,
