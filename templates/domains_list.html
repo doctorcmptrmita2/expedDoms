@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}All Domains - ExpiredDomain.dev{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-slate-900 mb-2">All Domains</h1>
+        <p class="text-slate-600">Comprehensive listing of dropped and future-dropping domains</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <form id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                <input type="date" name="date" value="{{ selected_date.isoformat() if selected_date else '' }}" 
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">TLD</label>
+                <select name="tld" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                    <option value="">All TLDs</option>
+                    {% for tld in active_tlds %}
+                    <option value="{{ tld.name }}" {% if selected_tld == tld.name %}selected{% endif %}>{{ tld.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Future Days</label>
+                <input type="number" name="future_days" value="{{ future_days }}" min="1" max="30"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" class="w-full px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="text-sm text-slate-600 mb-1">Dropped on {{ selected_date.isoformat() if selected_date else 'N/A' }}</div>
+            <div class="text-3xl font-bold text-slate-900">{{ total_dropped | default(0) }}</div>
+            <div class="text-sm text-slate-500 mt-1">domains</div>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="text-sm text-slate-600 mb-1">Future Drops (next {{ future_days }} days)</div>
+            <div class="text-3xl font-bold text-slate-900">{{ total_future | default(0) }}</div>
+            <div class="text-sm text-slate-500 mt-1">domains</div>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="text-sm text-slate-600 mb-1">Total Tracked TLDs</div>
+            <div class="text-3xl font-bold text-slate-900">{{ active_tlds | length }}</div>
+            <div class="text-sm text-slate-500 mt-1">TLDs</div>
+        </div>
+    </div>
+
+    <!-- Dropped Domains Section -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">
+            Dropped Domains ({{ selected_date.isoformat() if selected_date else 'N/A' }})
+        </h2>
+        
+        {% if dropped_domains %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Domain</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">TLD</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Drop Date</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Length</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Charset</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for domain in dropped_domains %}
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono text-slate-900">{{ domain.domain }}</td>
+                        <td class="py-3 px-4 text-slate-600">.{{ domain.tld }}</td>
+                        <td class="py-3 px-4 text-slate-600">{{ domain.drop_date.isoformat() }}</td>
+                        <td class="py-3 px-4 text-slate-600">{{ domain.length }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                                {{ domain.charset_type }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <button onclick="copyToClipboard('{{ domain.domain }}')" 
+                                    class="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition">
+                                Copy
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if total_dropped > dropped_domains | length %}
+        <div class="mt-4 text-center text-sm text-slate-600">
+            Showing {{ dropped_domains | length }} of {{ total_dropped }} domains. 
+            <a href="/drops?date={{ selected_date.isoformat() if selected_date else '' }}&tld={{ selected_tld or '' }}" 
+               class="text-slate-900 font-medium hover:underline">View all</a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-12 text-slate-500">
+            No dropped domains found for this date.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Future Drops Section -->
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">
+            Future Drops (Next {{ future_days }} Days)
+        </h2>
+        
+        {% if future_domains %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Domain</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">TLD</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Drop Date</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Length</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Charset</th>
+                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for domain in future_domains %}
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono text-slate-900">{{ domain.domain }}</td>
+                        <td class="py-3 px-4 text-slate-600">.{{ domain.tld }}</td>
+                        <td class="py-3 px-4 text-slate-600">{{ domain.drop_date.isoformat() }}</td>
+                        <td class="py-3 px-4 text-slate-600">{{ domain.length }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                                {{ domain.charset_type }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <button onclick="copyToClipboard('{{ domain.domain }}')" 
+                                    class="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition">
+                                Copy
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if total_future > future_domains | length %}
+        <div class="mt-4 text-center text-sm text-slate-600">
+            Showing {{ future_domains | length }} of {{ total_future }} future drops.
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-12 text-slate-500">
+            No future drops found for the next {{ future_days }} days.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        toast.textContent = 'Copied!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
+}
+</script>
+{% endblock %}
+

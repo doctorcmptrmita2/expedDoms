@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAuthForm();
     initializeZoneButtons();
     initializeRefreshButtons();
+    loadDownloadHistory();
     
     // Try to load zones if credentials are stored
     const storedUsername = localStorage.getItem('czds_username');
@@ -331,6 +332,22 @@ async function downloadZone(zoneUrl, tld) {
                 <div class="text-sm text-slate-600 mt-1 font-mono">${escapeHtml(data.data.path)}</div>
                 ${processInfo}
             `;
+            
+            // Store download in localStorage for persistence
+            const downloadHistory = JSON.parse(localStorage.getItem('download_history') || '[]');
+            downloadHistory.push({
+                tld: tld,
+                date: new Date().toISOString(),
+                path: data.data.path,
+                size: data.data.size,
+                processed: data.data.processed || false,
+                process_result: data.data.process_result || {}
+            });
+            // Keep only last 50 downloads
+            if (downloadHistory.length > 50) {
+                downloadHistory.shift();
+            }
+            localStorage.setItem('download_history', JSON.stringify(downloadHistory));
         } else {
             messageDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-3';
             messageDiv.innerHTML = `
@@ -428,5 +445,47 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Load and display download history from localStorage
+ */
+function loadDownloadHistory() {
+    const downloadHistory = JSON.parse(localStorage.getItem('download_history') || '[]');
+    const statusDiv = document.getElementById('download-status');
+    const messagesDiv = document.getElementById('download-messages');
+    
+    if (!statusDiv || !messagesDiv) return;
+    
+    if (downloadHistory.length > 0) {
+        statusDiv.classList.remove('hidden');
+        messagesDiv.innerHTML = '';
+        
+        // Show last 10 downloads
+        downloadHistory.slice(-10).reverse().forEach(download => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-green-50 border border-green-200 rounded-lg p-3 mb-2';
+            
+            const processInfo = download.processed && download.process_result ? `
+                <div class="mt-2 pt-2 border-t border-green-300">
+                    <div class="text-sm">
+                        <strong>Parsed:</strong> ${download.process_result.sld_count || 0} domains found
+                        ${download.process_result.drops_detected ? `<br><strong>Drops:</strong> ${download.process_result.dropped_count || 0} dropped, ${download.process_result.persisted_count || 0} saved to DB` : ''}
+                    </div>
+                </div>
+            ` : '';
+            
+            messageDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>✓ ${download.tld} (${new Date(download.date).toLocaleString()})</span>
+                    <span class="text-sm text-slate-600">${formatBytes(download.size)}</span>
+                </div>
+                <div class="text-sm text-slate-600 mt-1 font-mono">${escapeHtml(download.path)}</div>
+                ${processInfo}
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+        });
+    }
 }
 
