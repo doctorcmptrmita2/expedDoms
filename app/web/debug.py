@@ -168,6 +168,62 @@ def debug_page(request: Request, db: Session = Depends(get_db)):
     status["db_available"] = db_available
     if db_available:
         try:
+            total_drops = db.query(func.count(DroppedDomain.id)).scalar()
+            latest_drop_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
+            earliest_drop_date = db.query(func.min(DroppedDomain.drop_date)).scalar()
+            
+            # Drops by date (last 7 days)
+            drops_by_date = []
+            if latest_drop_date:
+                for i in range(7):
+                    check_date = latest_drop_date - timedelta(days=i)
+                    count = db.query(func.count(DroppedDomain.id)).filter(
+                        DroppedDomain.drop_date == check_date
+                    ).scalar()
+                    drops_by_date.append({
+                        "date": check_date.isoformat(),
+                        "count": count
+                    })
+            
+            # Recent drops
+            recent_drops = db.query(DroppedDomain).join(Tld).order_by(
+                desc(DroppedDomain.created_at)
+            ).limit(20).all()
+            
+            status["db_stats"] = {
+                "total_drops": total_drops,
+                "latest_drop_date": latest_drop_date.isoformat() if latest_drop_date else None,
+                "earliest_drop_date": earliest_drop_date.isoformat() if earliest_drop_date else None,
+                "drops_by_date": drops_by_date
+            }
+            
+            status["recent_drops"] = [
+                {
+                    "id": drop.id,
+                    "domain": drop.domain,
+                    "tld": drop.tld.name,
+                    "drop_date": drop.drop_date.isoformat(),
+                    "created_at": drop.created_at.isoformat() if drop.created_at else None
+                }
+                for drop in recent_drops
+            ]
+        except Exception as e:
+            status["db_stats_error"] = str(e)
+            status["db_stats"] = {
+                "total_drops": 0,
+                "latest_drop_date": None,
+                "earliest_drop_date": None,
+                "drops_by_date": []
+            }
+            status["recent_drops"] = []
+    else:
+        status["db_stats"] = {
+            "total_drops": 0,
+            "latest_drop_date": None,
+            "earliest_drop_date": None,
+            "drops_by_date": []
+        }
+        status["recent_drops"] = []
         total_drops = db.query(func.count(DroppedDomain.id)).scalar()
         latest_drop_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
         earliest_drop_date = db.query(func.min(DroppedDomain.drop_date)).scalar()
