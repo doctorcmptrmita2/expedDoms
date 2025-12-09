@@ -23,6 +23,7 @@ def domains_list(
     request: Request,
     date_filter: Optional[date] = Query(None, alias="date"),
     tld: Optional[str] = Query(None),
+    show_all: bool = Query(False, description="Show all domains regardless of date"),
     future_days: int = Query(7, ge=1, le=30, description="Days to look ahead for future drops"),
     db: Session = Depends(get_db)
 ):
@@ -31,7 +32,7 @@ def domains_list(
     """
     # Initialize default values
     active_tlds = []
-    selected_date = date.today()
+    selected_date = None
     selected_tld = tld
     dropped_domains = []
     future_domains = []
@@ -45,23 +46,32 @@ def domains_list(
         # Determine date to show
         if date_filter:
             selected_date = date_filter
-        else:
+        elif not show_all:
             # Get latest drop date from database
             latest_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
             if latest_date:
                 selected_date = latest_date
         
-        # Get dropped domains for selected date
+        # Get dropped domains
         query_dropped = db.query(DroppedDomain).join(Tld)
-        query_dropped = query_dropped.filter(DroppedDomain.drop_date == selected_date)
         
+        # Apply date filter only if not showing all
+        if not show_all and selected_date:
+            query_dropped = query_dropped.filter(DroppedDomain.drop_date == selected_date)
+        
+        # Apply TLD filter
         if tld:
             query_dropped = query_dropped.filter(Tld.name == tld.lower())
         
+        # Get total count before limiting
+        total_dropped = query_dropped.count()
+        
+        # Order and limit
         dropped_domains_list = query_dropped.order_by(
-            desc(DroppedDomain.quality_score),
+            desc(DroppedDomain.drop_date),
+            desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
             DroppedDomain.domain
-        ).limit(1000).all()
+        ).limit(5000).all()  # Increased limit to show more domains
         
         dropped_domains = [
             DropRead(
@@ -75,17 +85,24 @@ def domains_list(
             for drop in dropped_domains_list
         ]
         
-        total_dropped = query_dropped.count()
-        
         # Get future dropping domains (domains that will drop in the next N days)
-        future_date = selected_date + timedelta(days=future_days)
-        query_future = db.query(DroppedDomain).join(Tld)
-        query_future = query_future.filter(
-            and_(
-                DroppedDomain.drop_date > selected_date,
+        if selected_date:
+            future_date = selected_date + timedelta(days=future_days)
+            query_future = db.query(DroppedDomain).join(Tld)
+            query_future = query_future.filter(
+                and_(
+                    DroppedDomain.drop_date > selected_date,
+                    DroppedDomain.drop_date <= future_date
+                )
+            )
+        else:
+            # If showing all, get future drops from today
+            future_date = date.today() + timedelta(days=future_days)
+            query_future = db.query(DroppedDomain).join(Tld)
+            query_future = query_future.filter(
+                DroppedDomain.drop_date > date.today(),
                 DroppedDomain.drop_date <= future_date
             )
-        )
         
         if tld:
             query_future = query_future.filter(Tld.name == tld.lower())
@@ -141,6 +158,7 @@ def domains_list(
         "active_tlds": active_tlds,
         "selected_date": selected_date,
         "selected_tld": selected_tld,
+        "show_all": show_all,
         "future_days": future_days,
         "dropped_domains": dropped_domains,
         "future_domains": future_domains,

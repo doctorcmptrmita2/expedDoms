@@ -11,11 +11,21 @@
 
     <!-- Filters -->
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <form id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form id="filter-form" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Show All</label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="show_all" value="true" {% if not selected_date %}checked{% endif %}
+                           class="mr-2 w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-500">
+                    <span class="text-sm text-slate-700">All domains</span>
+                </label>
+            </div>
+            
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
                 <input type="date" name="date" value="{{ selected_date.isoformat() if selected_date else '' }}" 
-                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                       {% if not selected_date %}disabled{% endif %}>
             </div>
             
             <div>
@@ -45,7 +55,13 @@
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="text-sm text-slate-600 mb-1">Dropped on {{ selected_date.isoformat() if selected_date else 'N/A' }}</div>
+            <div class="text-sm text-slate-600 mb-1">
+                {% if selected_date %}
+                    Dropped on {{ selected_date.isoformat() }}
+                {% else %}
+                    All Dropped Domains
+                {% endif %}
+            </div>
             <div class="text-3xl font-bold text-slate-900">{{ total_dropped | default(0) }}</div>
             <div class="text-sm text-slate-500 mt-1">domains</div>
         </div>
@@ -66,7 +82,11 @@
     <!-- Dropped Domains Section -->
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
         <h2 class="text-2xl font-bold text-slate-900 mb-4">
-            Dropped Domains ({{ selected_date.isoformat() if selected_date else 'N/A' }})
+            {% if selected_date %}
+                Dropped Domains ({{ selected_date.isoformat() }})
+            {% else %}
+                All Dropped Domains
+            {% endif %}
         </h2>
         
         {% if dropped_domains %}
@@ -108,9 +128,11 @@
         
         {% if total_dropped > dropped_domains | length %}
         <div class="mt-4 text-center text-sm text-slate-600">
-            Showing {{ dropped_domains | length }} of {{ total_dropped }} domains. 
-            <a href="/drops?date={{ selected_date.isoformat() if selected_date else '' }}&tld={{ selected_tld or '' }}" 
-               class="text-slate-900 font-medium hover:underline">View all</a>
+            Showing {{ dropped_domains | length }} of {{ total_dropped }} domains.
+            {% if selected_date %}
+            <a href="/drops?date={{ selected_date.isoformat() }}&tld={{ selected_tld or '' }}" 
+               class="text-slate-900 font-medium hover:underline ml-2">View all with pagination</a>
+            {% endif %}
         </div>
         {% endif %}
         {% else %}
@@ -187,6 +209,23 @@ function copyToClipboard(text) {
         setTimeout(() => toast.remove(), 2000);
     });
 }
+
+// Handle show_all checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const showAllCheckbox = document.querySelector('input[name="show_all"]');
+    const dateInput = document.querySelector('input[name="date"]');
+    
+    if (showAllCheckbox && dateInput) {
+        showAllCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                dateInput.disabled = true;
+                dateInput.value = '';
+            } else {
+                dateInput.disabled = false;
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
 
