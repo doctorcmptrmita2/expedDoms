@@ -23,34 +23,46 @@ def home(request: Request, db: Session = Depends(get_db)):
     """
     Home page with stats and preview.
     """
-    # Get stats
-    tld_count = db.query(Tld).filter(Tld.is_active == True).count()
+    try:
+        # Get stats
+        tld_count = db.query(Tld).filter(Tld.is_active == True).count()
+    except Exception as e:
+        # If database is not available, show error page or default values
+        import logging
+        logging.error(f"Database connection error: {e}")
+        tld_count = 0
     
-    latest_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
-    
-    latest_drop_count = 0
-    if latest_date:
-        latest_drop_count = db.query(func.count(DroppedDomain.id)).filter(
-            DroppedDomain.drop_date == latest_date
-        ).scalar()
-    
-    # Get top 20 latest drops for preview
-    preview_drops = db.query(DroppedDomain).join(Tld).order_by(
-        desc(DroppedDomain.drop_date),
-        DroppedDomain.domain
-    ).limit(20).all()
-    
-    preview_results = [
-        DropRead(
-            id=drop.id,
-            domain=drop.domain,
-            tld=drop.tld.name,
-            drop_date=drop.drop_date,
-            length=drop.length,
-            charset_type=drop.charset_type
-        )
-        for drop in preview_drops
-    ]
+        latest_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
+        
+        latest_drop_count = 0
+        if latest_date:
+            latest_drop_count = db.query(func.count(DroppedDomain.id)).filter(
+                DroppedDomain.drop_date == latest_date
+            ).scalar()
+        
+        # Get top 20 latest drops for preview
+        preview_drops = db.query(DroppedDomain).join(Tld).order_by(
+            desc(DroppedDomain.drop_date),
+            DroppedDomain.domain
+        ).limit(20).all()
+        
+        preview_results = [
+            DropRead(
+                id=drop.id,
+                domain=drop.domain,
+                tld=drop.tld.name,
+                drop_date=drop.drop_date,
+                length=drop.length,
+                charset_type=drop.charset_type
+            )
+            for drop in preview_drops
+        ]
+    except Exception as e:
+        import logging
+        logging.error(f"Database query error: {e}")
+        latest_date = None
+        latest_drop_count = 0
+        preview_results = []
     
     return templates.TemplateResponse("home.html", {
         "request": request,
