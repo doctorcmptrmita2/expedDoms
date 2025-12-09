@@ -1,0 +1,30 @@
+# EasyPanel Configuration File
+# Bu dosya EasyPanel'in otomatik olarak tanıyabileceği konfigürasyon dosyasıdır
+
+name: expireddomain
+description: Daily dropped domains explorer using ICANN CZDS zone files
+
+build:
+  type: dockerfile
+  dockerfile: Dockerfile
+  context: .
+
+ports:
+  - container: 8000
+    http: true
+
+environment:
+  - APP_NAME=ExpiredDomain.dev
+  - ENV=production
+  - DATABASE_URL=${DATABASE_URL}
+  - DATA_DIR=/app/data
+
+volumes:
+  - name: expireddomain-data
+    mount: /app/data
+    type: persistent
+
+healthcheck:
+  path: /health
+  interval: 30
+

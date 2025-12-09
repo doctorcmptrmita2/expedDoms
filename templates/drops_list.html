@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Dropped Domains{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold text-slate-900 mb-6">Dropped Domains</h1>
+
+<!-- Filter Bar -->
+<div class="bg-white rounded-2xl shadow-sm p-6 mb-6 sticky top-4 z-10">
+    <form id="filter-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Date Filter -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                <input type="date" id="date-filter" name="date" value="{% if selected_date %}{{ selected_date.strftime('%Y-%m-%d') }}{% endif %}" 
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+            </div>
+            
+            <!-- TLD Filter -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">TLD</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="tld-filter px-3 py-1 rounded-full text-sm border border-slate-300 hover:bg-slate-100 {% if not selected_tld %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}" data-tld="">
+                        All
+                    </button>
+                    {% for tld in active_tlds %}
+                    <button type="button" class="tld-filter px-3 py-1 rounded-full text-sm border border-slate-300 hover:bg-slate-100 {% if selected_tld == tld.name %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}" data-tld="{{ tld.name }}">
+                        .{{ tld.name }}
+                    </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" id="tld-filter" name="tld" value="{{ selected_tld or '' }}">
+            </div>
+            
+            <!-- Search Filter -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                <input type="text" id="search-filter" name="search" placeholder="Contains keyword..." 
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+            </div>
+            
+            <!-- Length Filter -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Length</label>
+                <div class="flex gap-2">
+                    <input type="number" id="min-length" name="min_length" placeholder="Min" min="1" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                    <input type="number" id="max-length" name="max_length" placeholder="Max" min="1" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Charset Filter -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Charset</label>
+                <select id="charset-filter" name="charset_type" 
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                    <option value="">Any</option>
+                    <option value="letters">Letters only</option>
+                    <option value="numbers">Numbers only</option>
+                    <option value="mixed">Mixed</option>
+                </select>
+            </div>
+            
+            <!-- Apply Button -->
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary -->
+<div id="summary" class="mb-4 text-slate-600">
+    {% if selected_date %}
+    Showing <span id="result-count">{{ total_count }}</span> results for {{ selected_date.strftime('%Y-%m-%d') }}
+    {% if selected_tld %}(TLD: .{{ selected_tld }}){% endif %}
+    {% endif %}
+</div>
+
+<!-- Results Table -->
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Domain</th>
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">TLD</th>
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Drop Date</th>
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Length</th>
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Charset</th>
+                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+                {% for drop in initial_drops %}
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono text-slate-900">{{ drop.domain }}</td>
+                    <td class="py-3 px-4 text-slate-600">.{{ drop.tld }}</td>
+                    <td class="py-3 px-4 text-slate-600">{{ drop.drop_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-3 px-4 text-slate-600">{{ drop.length }}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded text-xs font-medium
+                            {% if drop.charset_type == 'letters' %}bg-blue-100 text-blue-800
+                            {% elif drop.charset_type == 'numbers' %}bg-green-100 text-green-800
+                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                            {{ drop.charset_type }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <button class="copy-btn px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm" data-domain="{{ drop.domain }}">
+                            Copy
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    <div id="pagination" class="p-4 border-t border-slate-200 flex justify-between items-center">
+        <div class="text-sm text-slate-600">
+            Page <span id="current-page">1</span> of <span id="total-pages">1</span>
+        </div>
+        <div class="flex gap-2">
+            <button id="prev-page" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Previous
+            </button>
+            <button id="next-page" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/app.js"></script>
+{% endblock %}
+

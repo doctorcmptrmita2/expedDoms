@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: expireddomain-app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@mysql:3306/expireddomain
+      - ENV=production
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+      - ./alembic:/app/alembic
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - expireddomain-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: expireddomain-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=expireddomain
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    networks:
+      - expireddomain-network
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql-data:
+
+networks:
+  expireddomain-network:
+    driver: bridge
+

@@ -1,0 +1,33 @@
+/* Custom CSS overrides for ExpiredDomain.dev */
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Toast animation */
+#toast {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Table row hover effect */
+tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+/* Copy button hover */
+.copy-btn {
+    transition: all 0.2s ease;
+}
+
