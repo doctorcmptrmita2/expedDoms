@@ -6,14 +6,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+
+# Get settings (may fail if .env is missing, but that's OK for health check)
+try:
+    settings = get_settings()
+    app_title = settings.APP_NAME
+except Exception:
+    app_title = "ExpiredDomain.dev"
+
 from app.api.v1 import tlds, drops, czds, process
 from app.web import routes, admin
 
-settings = get_settings()
-
 # Create FastAPI app
 app = FastAPI(
-    title=settings.APP_NAME,
+    title=app_title,
     description="Daily dropped domains explorer using ICANN CZDS zone files",
     version="1.0.0"
 )
@@ -27,8 +33,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files (with error handling)
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception as e:
+    # Log error but don't fail startup if static directory doesn't exist
+    import logging
+    logging.warning(f"Could not mount static files: {e}")
 
 # Include API routers
 app.include_router(tlds.router, prefix="/api/v1", tags=["TLDs"])
