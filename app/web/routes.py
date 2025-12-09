@@ -23,18 +23,18 @@ def home(request: Request, db: Session = Depends(get_db)):
     """
     Home page with stats and preview.
     """
+    # Initialize default values
+    tld_count = 0
+    latest_date = None
+    latest_drop_count = 0
+    preview_results = []
+    
     try:
         # Get stats
         tld_count = db.query(Tld).filter(Tld.is_active == True).count()
-    except Exception as e:
-        # If database is not available, show error page or default values
-        import logging
-        logging.error(f"Database connection error: {e}")
-        tld_count = 0
-    
+        
         latest_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
         
-        latest_drop_count = 0
         if latest_date:
             latest_drop_count = db.query(func.count(DroppedDomain.id)).filter(
                 DroppedDomain.drop_date == latest_date
@@ -58,11 +58,10 @@ def home(request: Request, db: Session = Depends(get_db)):
             for drop in preview_drops
         ]
     except Exception as e:
+        # If database is not available, use default values
         import logging
-        logging.error(f"Database query error: {e}")
-        latest_date = None
-        latest_drop_count = 0
-        preview_results = []
+        logging.error(f"Database error in home route: {e}")
+        # Values already set to defaults above
     
     return templates.TemplateResponse("home.html", {
         "request": request,
@@ -83,37 +82,51 @@ def drops_list(
     """
     Drops list page with filters.
     """
-    # Get all active TLDs for filter
-    active_tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
-    
-    # Determine date to show
-    if date_filter is None:
-        date_filter = db.query(func.max(DroppedDomain.drop_date)).scalar()
+    try:
+        # Get all active TLDs for filter
+        active_tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
+        
+        # Determine date to show
+        if date_filter is None:
+            date_filter = db.query(func.max(DroppedDomain.drop_date)).scalar()
+    except Exception as e:
+        import logging
+        logging.error(f"Database error in drops_list route: {e}")
+        active_tlds = []
+        date_filter = None
     
     # Get initial page of results
-    query = db.query(DroppedDomain).join(Tld)
+    initial_results = []
+    total_count = 0
     
-    if date_filter:
-        query = query.filter(DroppedDomain.drop_date == date_filter)
-    
-    if tld:
-        query = query.filter(Tld.name == tld.lower())
-    
-    initial_drops = query.order_by(DroppedDomain.domain).limit(50).all()
-    
-    initial_results = [
-        DropRead(
-            id=drop.id,
-            domain=drop.domain,
-            tld=drop.tld.name,
-            drop_date=drop.drop_date,
-            length=drop.length,
-            charset_type=drop.charset_type
-        )
-        for drop in initial_drops
-    ]
-    
-    total_count = query.count() if date_filter else 0
+    try:
+        query = db.query(DroppedDomain).join(Tld)
+        
+        if date_filter:
+            query = query.filter(DroppedDomain.drop_date == date_filter)
+        
+        if tld:
+            query = query.filter(Tld.name == tld.lower())
+        
+        initial_drops = query.order_by(DroppedDomain.domain).limit(50).all()
+        
+        initial_results = [
+            DropRead(
+                id=drop.id,
+                domain=drop.domain,
+                tld=drop.tld.name,
+                drop_date=drop.drop_date,
+                length=drop.length,
+                charset_type=drop.charset_type
+            )
+            for drop in initial_drops
+        ]
+        
+        total_count = query.count() if date_filter else 0
+    except Exception as e:
+        import logging
+        logging.error(f"Database error in drops_list query: {e}")
+        # Values already set to defaults above
     
     return templates.TemplateResponse("drops_list.html", {
         "request": request,
@@ -130,7 +143,13 @@ def tld_list(request: Request, db: Session = Depends(get_db)):
     """
     TLD list page.
     """
-    tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
+    tlds = []
+    try:
+        tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
+    except Exception as e:
+        import logging
+        logging.error(f"Database error in tld_list route: {e}")
+        # tlds already set to empty list above
     
     return templates.TemplateResponse("tld_list.html", {
         "request": request,
