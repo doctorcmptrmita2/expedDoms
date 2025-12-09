@@ -40,7 +40,53 @@ def debug_page(request: Request, db: Session = Depends(get_db)):
         "recent_drops": []
     }
     
-    # Check TLDs and zone files
+    # Check zone files directly from filesystem (even if DB is not available)
+    zone_files_found = {}
+    if zones_dir.exists():
+        for tld_dir in zones_dir.iterdir():
+            if tld_dir.is_dir():
+                tld_name = tld_dir.name
+                zone_files = sorted(tld_dir.glob("*.zone"), reverse=True)
+                if zone_files:
+                    zone_files_found[tld_name] = []
+                    for zone_file in zone_files[:10]:  # Last 10 files
+                        try:
+                            file_size = zone_file.stat().st_size
+                            file_date_str = zone_file.stem  # YYYYMMDD
+                            try:
+                                file_date = date(
+                                    int(file_date_str[:4]),
+                                    int(file_date_str[4:6]),
+                                    int(file_date_str[6:8])
+                                )
+                            except:
+                                file_date = None
+                            
+                            # Try to parse and count SLDs
+                            sld_count = None
+                            try:
+                                slds = extract_slds_from_zone(zone_file, tld_name)
+                                sld_count = len(slds)
+                            except Exception as e:
+                                sld_count = f"Error: {str(e)[:50]}"
+                            
+                            zone_files_found[tld_name].append({
+                                "path": str(zone_file),
+                                "name": zone_file.name,
+                                "size": file_size,
+                                "size_mb": round(file_size / (1024 * 1024), 2),
+                                "date": file_date.isoformat() if file_date else None,
+                                "sld_count": sld_count
+                            })
+                        except Exception as e:
+                            zone_files_found[tld_name].append({
+                                "path": str(zone_file),
+                                "name": zone_file.name,
+                                "error": str(e)[:100]
+                            })
+    
+    # Check TLDs and zone files from database (if available)
+    db_available = True
     try:
         tlds = db.query(Tld).filter(Tld.is_active == True).order_by(Tld.name).all()
         
@@ -103,9 +149,25 @@ def debug_page(request: Request, db: Session = Depends(get_db)):
             status["tlds"].append(tld_info)
     except Exception as e:
         status["db_error"] = str(e)
+        db_available = False
     
-    # Database statistics
-    try:
+    # If no TLDs from DB, use filesystem zone files
+    if not status["tlds"] and zone_files_found:
+        for tld_name, files in zone_files_found.items():
+            status["tlds"].append({
+                "name": tld_name,
+                "display_name": tld_name,
+                "last_import_date": None,
+                "last_drop_count": 0,
+                "zone_files": files,
+                "drop_count": 0,
+                "from_filesystem": True
+            })
+    
+    # Database statistics (only if DB is available)
+    status["db_available"] = db_available
+    if db_available:
+        try:
         total_drops = db.query(func.count(DroppedDomain.id)).scalar()
         latest_drop_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
         earliest_drop_date = db.query(func.min(DroppedDomain.drop_date)).scalar()
@@ -147,6 +209,14 @@ def debug_page(request: Request, db: Session = Depends(get_db)):
         ]
     except Exception as e:
         status["db_stats_error"] = str(e)
+    else:
+        status["db_stats"] = {
+            "total_drops": 0,
+            "latest_drop_date": None,
+            "earliest_drop_date": None,
+            "drops_by_date": []
+        }
+        status["recent_drops"] = []
     
     return templates.TemplateResponse("debug.html", {
         "request": request,
