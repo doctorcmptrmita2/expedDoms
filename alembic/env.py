@@ -73,7 +73,6 @@ def run_migrations_online() -> None:
 
     """
     # Get URL from attributes to avoid interpolation issues with URL-encoded characters
-    from sqlalchemy import create_engine
     db_url = config.attributes.get('sqlalchemy.url') or settings.DATABASE_URL
     connectable = create_engine(
         db_url,
