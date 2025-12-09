@@ -86,6 +86,7 @@ def domains_list(
         ]
         
         # Get future dropping domains (domains that will drop in the next N days)
+        # Only show future drops if we have a selected date, otherwise skip
         if selected_date:
             future_date = selected_date + timedelta(days=future_days)
             query_future = db.query(DroppedDomain).join(Tld)
@@ -95,37 +96,33 @@ def domains_list(
                     DroppedDomain.drop_date <= future_date
                 )
             )
+            
+            if tld:
+                query_future = query_future.filter(Tld.name == tld.lower())
+            
+            future_domains_list = query_future.order_by(
+                DroppedDomain.drop_date,
+                desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
+                DroppedDomain.domain
+            ).limit(1000).all()
+            
+            future_domains = [
+                DropRead(
+                    id=drop.id,
+                    domain=drop.domain,
+                    tld=drop.tld.name,
+                    drop_date=drop.drop_date,
+                    length=drop.length,
+                    charset_type=drop.charset_type
+                )
+                for drop in future_domains_list
+            ]
+            
+            total_future = query_future.count()
         else:
-            # If showing all, get future drops from today
-            future_date = date.today() + timedelta(days=future_days)
-            query_future = db.query(DroppedDomain).join(Tld)
-            query_future = query_future.filter(
-                DroppedDomain.drop_date > date.today(),
-                DroppedDomain.drop_date <= future_date
-            )
-        
-        if tld:
-            query_future = query_future.filter(Tld.name == tld.lower())
-        
-        future_domains_list = query_future.order_by(
-            DroppedDomain.drop_date,
-            desc(DroppedDomain.quality_score),
-            DroppedDomain.domain
-        ).limit(1000).all()
-        
-        future_domains = [
-            DropRead(
-                id=drop.id,
-                domain=drop.domain,
-                tld=drop.tld.name,
-                drop_date=drop.drop_date,
-                length=drop.length,
-                charset_type=drop.charset_type
-            )
-            for drop in future_domains_list
-        ]
-        
-        total_future = query_future.count()
+            # If showing all domains, don't show future drops section
+            future_domains = []
+            total_future = 0
         
     except Exception as e:
         import logging
