@@ -20,9 +20,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Copy check script
+# Copy check scripts
 COPY check_container.sh /app/check_container.sh
 RUN chmod +x /app/check_container.sh
+COPY check_db_connection.py /app/check_db_connection.py
+RUN chmod +x /app/check_db_connection.py
 
 # Create data directory for zone files
 RUN mkdir -p /app/data/zones

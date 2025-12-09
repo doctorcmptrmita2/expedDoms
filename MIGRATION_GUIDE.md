@@ -47,12 +47,35 @@ Migration başarılı olduktan sonra:
 
 ## Sorun Giderme
 
-### Migration Hatası: "Can't connect to MySQL"
+### Migration Hatası: "Can't connect to MySQL" veya "Name or service not known"
 
-**Çözüm:** `DATABASE_URL` environment variable'ını kontrol edin:
-- Format: `mysql+pymysql://user:password@host:port/database`
-- EasyPanel'de MySQL servis adı genellikle `mysql` olur
-- Şifrede özel karakterler varsa URL-encode edin (`@` → `%40`)
+**Sorun:** MySQL hostname'i (`mysql`) çözümlenemiyor.
+
+**Çözüm Adımları:**
+
+1. **MySQL Servis Adını Bulun:**
+   - EasyPanel'de **Services** sekmesine gidin
+   - MySQL servisinizin **Service Name** veya **Internal Name**'ini bulun
+   - Örnek: `expireddomain-mysql`, `mysql`, `mysql-1`, vb.
+
+2. **DATABASE_URL'i Güncelleyin:**
+   - EasyPanel'de projenizin **Environment Variables** sekmesine gidin
+   - `DATABASE_URL` değişkenini bulun
+   - Hostname kısmını gerçek MySQL servis adıyla değiştirin
+   - Format: `mysql+pymysql://user:password@SERVICE_NAME:3306/database`
+   - Örnek: `mysql+pymysql://root:password@expireddomain-mysql:3306/expireddomain`
+
+3. **Container'ı Yeniden Başlatın:**
+   - Environment variable değişikliğinden sonra container'ı restart edin
+   - EasyPanel'de "Restart" butonuna tıklayın
+
+4. **Bağlantıyı Test Edin:**
+   ```bash
+   # Container içinde
+   python3 check_db_connection.py
+   ```
+
+**Not:** Şifrede özel karakterler varsa URL-encode edin (`@` → `%40`, `#` → `%23`, vb.)
 
 ### Migration Hatası: "Table already exists"
 
