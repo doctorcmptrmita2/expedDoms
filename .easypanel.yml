@@ -27,4 +27,7 @@ volumes:
 healthcheck:
   path: /health
   interval: 30
+  timeout: 10
+  start_period: 60
+  retries: 3
 
