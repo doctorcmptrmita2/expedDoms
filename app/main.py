@@ -15,7 +15,7 @@ except Exception:
     app_title = "ExpiredDomain.dev"
 
 from app.api.v1 import tlds, drops, czds, process
-from app.web import routes, admin, domains
+from app.web import routes, admin, domains, debug
 
 # Create FastAPI app
 app = FastAPI(
@@ -51,6 +51,7 @@ app.include_router(process.router, prefix="/api/v1", tags=["Process"])
 app.include_router(routes.router, tags=["Web"])
 app.include_router(admin.router, tags=["Admin"])
 app.include_router(domains.router, tags=["Domains"])
+app.include_router(debug.router, tags=["Debug"])
 
 
 @app.get("/health")

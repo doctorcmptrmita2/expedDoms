@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Debug & Test - ExpiredDomain.dev{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-slate-900 mb-2">🔍 Debug & Test Page</h1>
+        <p class="text-slate-600">Check download, parse, and database status</p>
+    </div>
+
+    <!-- Data Directory Status -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">📁 Data Directory Status</h2>
+        <div class="space-y-2">
+            <div class="flex items-center">
+                <span class="w-40 text-slate-600">Data Dir:</span>
+                <span class="font-mono text-sm {% if status.data_dir_exists %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ status.data_dir_path }}
+                </span>
+                {% if status.data_dir_exists %}
+                    <span class="ml-2 text-green-600">✓</span>
+                {% else %}
+                    <span class="ml-2 text-red-600">✗</span>
+                {% endif %}
+            </div>
+            <div class="flex items-center">
+                <span class="w-40 text-slate-600">Zones Dir:</span>
+                <span class="font-mono text-sm {% if status.zones_dir_exists %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ status.zones_dir_path }}
+                </span>
+                {% if status.zones_dir_exists %}
+                    <span class="ml-2 text-green-600">✓</span>
+                {% else %}
+                    <span class="ml-2 text-red-600">✗</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Statistics -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">📊 Database Statistics</h2>
+        {% if status.db_stats_error %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+                Error: {{ status.db_stats_error }}
+            </div>
+        {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-slate-50 rounded-lg p-4">
+                    <div class="text-sm text-slate-600 mb-1">Total Drops</div>
+                    <div class="text-3xl font-bold text-slate-900">{{ status.db_stats.total_drops | default(0) }}</div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4">
+                    <div class="text-sm text-slate-600 mb-1">Latest Drop Date</div>
+                    <div class="text-lg font-semibold text-slate-900">{{ status.db_stats.latest_drop_date | default('N/A') }}</div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4">
+                    <div class="text-sm text-slate-600 mb-1">Earliest Drop Date</div>
+                    <div class="text-lg font-semibold text-slate-900">{{ status.db_stats.earliest_drop_date | default('N/A') }}</div>
+                </div>
+            </div>
+            
+            {% if status.db_stats.drops_by_date %}
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">Drops by Date (Last 7 Days)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-2 px-4 font-semibold text-slate-700">Date</th>
+                                <th class="text-left py-2 px-4 font-semibold text-slate-700">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in status.db_stats.drops_by_date %}
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 px-4">{{ item.date }}</td>
+                                <td class="py-2 px-4 font-semibold">{{ item.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- TLDs and Zone Files -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">🌐 TLDs & Zone Files</h2>
+        {% if status.db_error %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+                Database Error: {{ status.db_error }}
+            </div>
+        {% elif status.tlds %}
+            {% for tld in status.tlds %}
+            <div class="mb-6 border-b border-slate-200 pb-6 {% if not loop.last %}mb-6{% endif %}">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xl font-bold text-slate-900">.{{ tld.name }}</h3>
+                    <div class="text-sm text-slate-600">
+                        <span class="font-semibold">{{ tld.drop_count }}</span> domains in DB
+                        {% if tld.last_import_date %}
+                            | Last import: {{ tld.last_import_date }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if tld.zone_files %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50">
+                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Zone File</th>
+                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Date</th>
+                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Size</th>
+                                <th class="text-left py-2 px-3 font-semibold text-slate-700">SLDs Found</th>
+                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for zone in tld.zone_files %}
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 px-3 font-mono text-xs">{{ zone.name }}</td>
+                                <td class="py-2 px-3">{{ zone.date | default('N/A') }}</td>
+                                <td class="py-2 px-3">{{ zone.size_mb | default(0) }} MB</td>
+                                <td class="py-2 px-3">
+                                    {% if zone.sld_count %}
+                                        {% if zone.sld_count is string %}
+                                            <span class="text-red-600">{{ zone.sld_count }}</span>
+                                        {% else %}
+                                            <span class="font-semibold text-green-600">{{ zone.sld_count }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-2 px-3">
+                                    {% if zone.sld_count and zone.sld_count is not string %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">✓ Parsed</span>
+                                    {% elif zone.error %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">✗ Error</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">⚠ Not Parsed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-slate-500">
+                    No zone files found for this TLD.
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-8 text-slate-500">
+                No TLDs found in database.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Drops -->
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">🆕 Recent Drops (Last 20)</h2>
+        {% if status.recent_drops %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Domain</th>
+                        <th class="text-left py-2 px-4 font-semibold text-slate-700">TLD</th>
+                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Drop Date</th>
+                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Created At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for drop in status.recent_drops %}
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 px-4 font-mono text-sm">{{ drop.domain }}</td>
+                        <td class="py-2 px-4">.{{ drop.tld }}</td>
+                        <td class="py-2 px-4">{{ drop.drop_date }}</td>
+                        <td class="py-2 px-4 text-sm text-slate-600">{{ drop.created_at | default('N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-slate-500">
+            No drops found in database.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Summary -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-900 mb-2">📝 How to Check:</h3>
+        <ul class="list-disc list-inside text-sm text-blue-800 space-y-1">
+            <li><strong>Download:</strong> Check if zone files exist in "TLDs & Zone Files" section</li>
+            <li><strong>Parse:</strong> Check "SLDs Found" column - should show number of domains</li>
+            <li><strong>DB Insert:</strong> Check "Recent Drops" section - domains should appear here</li>
+            <li><strong>Auto Process:</strong> When downloading via admin panel with <code>auto_process=true</code>, files are automatically parsed and drops are detected</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
