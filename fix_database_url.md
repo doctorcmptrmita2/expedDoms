@@ -2,123 +2,78 @@
 
 ## Sorun
 
-Hata: `Can't connect to MySQL server on '@mysql'`
+MySQL bağlantı hatası: `Can't connect to MySQL server on 'mysql'`
 
-Bu hata, DATABASE_URL'in yanlış parse edildiğini gösteriyor.
+## Çözüm
 
-## Container İçinde Kontrol
+Ekran görüntüsündeki bilgilere göre:
 
-EasyPanel Terminal/Exec'ten şu komutları çalıştırın:
+### Mevcut Bilgiler (EasyPanel'den):
+- **Internal Host:** `expireddomain_expireddomain-mysql`
+- **User:** `test`
+- **Password:** `Tk990303005@`
+- **Database:** `expireddomain`
+- **Port:** `3306`
+
+### Doğru DATABASE_URL:
+
+```
+mysql+pymysql://test:Tk990303005%40@expireddomain_expireddomain-mysql:3306/expireddomain
+```
+
+**Önemli:** Password'deki `@` karakteri `%40` olarak URL-encode edilmelidir!
+
+## EasyPanel'de Güncelleme Adımları
+
+1. **Projenize gidin** → Environment Variables sekmesi
+2. **`DATABASE_URL` değişkenini bulun**
+3. **Değeri şu şekilde güncelleyin:**
+
+```
+mysql+pymysql://test:Tk990303005%40@expireddomain_expireddomain-mysql:3306/expireddomain
+```
+
+4. **Kaydedin**
+5. **Container'ı restart edin** (Restart butonuna tıklayın)
+
+## Test Etme
+
+Container içinde:
 
 ```bash
-# 1. DATABASE_URL'i göster
-python3 -c "import os; print('DATABASE_URL:', os.environ.get('DATABASE_URL', 'NOT SET'))"
+# Bağlantıyı test et
+python3 check_db_connection.py
 
-# 2. Settings'ten DATABASE_URL'i göster
-python3 -c "from app.core.config import get_settings; s = get_settings(); print('DATABASE_URL:', s.DATABASE_URL)"
-
-# 3. URL'i parse et
-python3 -c "
-from urllib.parse import urlparse
-import os
-db_url = os.environ.get('DATABASE_URL', '')
-if db_url:
-    parsed = urlparse(db_url)
-    print(f'Scheme: {parsed.scheme}')
-    print(f'Username: {parsed.username}')
-    print(f'Password: {\"*\" * len(parsed.password) if parsed.password else \"(empty)\"}')
-    print(f'Hostname: {parsed.hostname}')
-    print(f'Port: {parsed.port}')
-    print(f'Database: {parsed.path.lstrip(\"/\")}')
-"
+# Migration çalıştır
+alembic upgrade head
 ```
 
-## EasyPanel'de Düzeltme
+## Karakter Encoding Tablosu
 
-### Adım 1: Environment Variables Kontrolü
+Şifrede özel karakterler varsa şu şekilde encode edin:
 
-1. EasyPanel'de projenize gidin
-2. **Environment Variables** sekmesine gidin
-3. `DATABASE_URL` değerini kontrol edin
-
-### Adım 2: Doğru Format
-
-**Doğru Format:**
-```
-mysql+pymysql://root:PASSWORD@mysql:3306/expireddomain
-```
-
-**Örnekler:**
-
-Şifre yoksa:
-```
-mysql+pymysql://root@mysql:3306/expireddomain
-```
-
-Şifre varsa:
-```
-mysql+pymysql://root:mypassword@mysql:3306/expireddomain
-```
-
-Şifrede özel karakterler varsa (URL encode):
 - `@` → `%40`
 - `#` → `%23`
 - `$` → `%24`
 - `%` → `%25`
 - `&` → `%26`
+- `+` → `%2B`
+- `=` → `%3D`
+- `?` → `%3F`
 
-Örnek: Şifre `pass@123` ise → `pass%40123`
+## Örnek DATABASE_URL Formatları
 
-### Adım 3: MySQL Servis Adını Kontrol Et
-
-1. EasyPanel'de **Services** sekmesine gidin
-2. MySQL servisinin adını kontrol edin
-3. Eğer ad `mysql` değilse, DATABASE_URL'deki `mysql` kısmını değiştirin
-
-### Adım 4: Container'ı Restart Et
-
-1. Environment variable'ı düzelttikten sonra
-2. Container'ı restart edin
-3. Tekrar test edin
-
-## Hızlı Test
-
-Container içinde:
-
-```bash
-# MySQL hostname resolution
-python3 -c "import socket; print(socket.gethostbyname('mysql'))"
-
-# MySQL port connectivity
-python3 -c "import socket; s = socket.socket(); result = s.connect_ex(('mysql', 3306)); s.close(); print('OK' if result == 0 else 'FAILED')"
-
-# Database connection test
-python3 -c "from app.core.database import engine; conn = engine.connect(); print('Connected!'); conn.close()"
+### Basit Şifre:
+```
+mysql+pymysql://user:password@host:3306/database
 ```
 
-## Yaygın Hatalar
+### Özel Karakter İçeren Şifre:
+```
+mysql+pymysql://user:pass%40word@host:3306/database
+```
 
-### Hata 1: Şifre eksik
+### Root Kullanıcı ile:
 ```
-mysql+pymysql://root:@mysql:3306/expireddomain
+mysql+pymysql://root:root%40password@expireddomain_expireddomain-mysql:3306/expireddomain
 ```
-**Çözüm:** Şifreyi ekleyin veya `:` işaretini kaldırın
-
-### Hata 2: Hostname yanlış
-```
-mysql+pymysql://root:password@wronghost:3306/expireddomain
-```
-**Çözüm:** MySQL servis adını kontrol edin
-
-### Hata 3: Port eksik
-```
-mysql+pymysql://root:password@mysql/expireddomain
-```
-**Çözüm:** Port ekleyin: `:3306`
-
-### Hata 4: Database adı eksik
-```
-mysql+pymysql://root:password@mysql:3306
-```
-**Çözüm:** Database adını ekleyin: `/expireddomain`
-
