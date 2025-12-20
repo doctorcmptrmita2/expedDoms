@@ -108,3 +108,11 @@ Değişiklik yaptıktan sonra:
 3. Build loglarını takip et
 4. Health check'i test et
 
+
+
+
+
+
+
+
+

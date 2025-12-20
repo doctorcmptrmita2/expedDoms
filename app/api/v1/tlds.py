@@ -22,3 +22,11 @@ def list_tlds(
     tlds = db.query(Tld).order_by(Tld.name).all()
     return tlds
 
+
+
+
+
+
+
+
+

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    
+    <!-- Welcome Header -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-frost mb-2">
+                Hoş geldin, <span class="bg-gradient-to-r from-neon-cyan to-neon-purple bg-clip-text text-transparent">{{ user.username }}</span>!
+            </h1>
+            <p class="text-mist">Domain takip panelinize hoş geldiniz</p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if user.is_premium %}
+            <span class="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-void text-sm font-semibold">
+                ⭐ Premium
+            </span>
+            {% else %}
+            <a href="#" class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink text-void font-medium text-sm hover:opacity-90 transition-opacity">
+                Premium'a Yükselt
+            </a>
+            {% endif %}
+            <a href="/logout" class="px-4 py-2 rounded-lg bg-steel/50 hover:bg-steel text-frost font-medium text-sm transition-colors">
+                Çıkış Yap
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Watchlists -->
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-cyan/50 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </div>
+                <span class="text-mist font-medium">Watchlist</span>
+            </div>
+            <div class="text-3xl font-bold text-frost font-mono">{{ watchlist_count }}</div>
+            <p class="text-xs text-mist/60 mt-1">/ {% if user.is_premium %}20{% else %}3{% endif %} maksimum</p>
+        </div>
+        
+        <!-- Favorites -->
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-pink/50 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                </div>
+                <span class="text-mist font-medium">Favoriler</span>
+            </div>
+            <div class="text-3xl font-bold text-frost font-mono">{{ favorite_count }}</div>
+            <p class="text-xs text-mist/60 mt-1">{% if user.is_premium %}sınırsız{% else %}/ 100 maksimum{% endif %}</p>
+        </div>
+        
+        <!-- Account Type -->
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-purple/50 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <span class="text-mist font-medium">Hesap Tipi</span>
+            </div>
+            <div class="text-xl font-bold text-frost">
+                {% if user.is_premium %}
+                <span class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Premium</span>
+                {% else %}
+                Ücretsiz
+                {% endif %}
+            </div>
+            <p class="text-xs text-mist/60 mt-1">{{ user.created_at.strftime('%d.%m.%Y') }} tarihinden beri</p>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-green/50 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="text-mist font-medium">Hızlı İşlemler</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <a href="/watchlists" class="text-sm text-neon-cyan hover:text-neon-purple transition-colors">+ Yeni Watchlist</a>
+                <a href="/drops" class="text-sm text-neon-cyan hover:text-neon-purple transition-colors">→ Bugünün Drop'ları</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Recent Watchlists -->
+        <div class="bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-steel/50 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-frost flex items-center gap-2">
+                    <svg class="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Watchlist'lerim
+                </h2>
+                <a href="/watchlists" class="text-sm text-neon-cyan hover:text-neon-purple transition-colors">Tümünü Gör →</a>
+            </div>
+            
+            {% if recent_watchlists %}
+            <div class="divide-y divide-steel/30">
+                {% for wl in recent_watchlists %}
+                <div class="px-6 py-4 hover:bg-steel/20 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium text-frost">{{ wl.name }}</h3>
+                            <p class="text-sm text-mist/60">
+                                {% if wl.domain_pattern %}Pattern: {{ wl.domain_pattern }}{% endif %}
+                                {% if wl.tld_filter %}TLD: {{ wl.tld_filter }}{% endif %}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if wl.is_active %}
+                            <span class="w-2 h-2 rounded-full bg-neon-green"></span>
+                            {% else %}
+                            <span class="w-2 h-2 rounded-full bg-mist/50"></span>
+                            {% endif %}
+                            {% if wl.notify_email %}
+                            <svg class="w-4 h-4 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-12 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-steel/30 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </div>
+                <p class="text-mist mb-4">Henüz watchlist oluşturmadınız</p>
+                <a href="/watchlists" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/20 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    İlk Watchlist'inizi Oluşturun
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Recent Favorites -->
+        <div class="bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-steel/50 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-frost flex items-center gap-2">
+                    <svg class="w-5 h-5 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    Son Favoriler
+                </h2>
+                <a href="/favorites" class="text-sm text-neon-cyan hover:text-neon-purple transition-colors">Tümünü Gör →</a>
+            </div>
+            
+            {% if recent_favorites %}
+            <div class="divide-y divide-steel/30">
+                {% for fav in recent_favorites %}
+                <div class="px-6 py-4 hover:bg-steel/20 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-mono text-frost font-medium">{{ fav.domain }}</span><span class="text-neon-cyan">.{{ fav.tld }}</span>
+                            {% if fav.notes %}
+                            <p class="text-xs text-mist/60 mt-1 truncate max-w-xs">{{ fav.notes }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="text-xs text-mist/60">{{ fav.drop_date.strftime('%d.%m') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-12 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-steel/30 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                </div>
+                <p class="text-mist mb-4">Henüz favori domain eklemediniz</p>
+                <a href="/drops" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Domain'leri Keşfedin
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+    </div>
+    
+    <!-- Quick Links -->
+    <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/profile" class="p-4 rounded-xl bg-steel/30 hover:bg-steel/50 transition-colors text-center group">
+            <svg class="w-6 h-6 mx-auto mb-2 text-mist group-hover:text-neon-cyan transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <span class="text-sm text-frost">Profil</span>
+        </a>
+        <a href="/watchlists" class="p-4 rounded-xl bg-steel/30 hover:bg-steel/50 transition-colors text-center group">
+            <svg class="w-6 h-6 mx-auto mb-2 text-mist group-hover:text-neon-cyan transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <span class="text-sm text-frost">Watchlist</span>
+        </a>
+        <a href="/favorites" class="p-4 rounded-xl bg-steel/30 hover:bg-steel/50 transition-colors text-center group">
+            <svg class="w-6 h-6 mx-auto mb-2 text-mist group-hover:text-neon-pink transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            <span class="text-sm text-frost">Favoriler</span>
+        </a>
+        <a href="/drops" class="p-4 rounded-xl bg-steel/30 hover:bg-steel/50 transition-colors text-center group">
+            <svg class="w-6 h-6 mx-auto mb-2 text-mist group-hover:text-neon-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            <span class="text-sm text-frost">Drops</span>
+        </a>
+    </div>
+    
+</div>
+{% endblock %}
+
+
+
+
+
+

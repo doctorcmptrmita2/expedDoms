@@ -1,0 +1,1072 @@
+{% extends "base.html" %}
+
+{% block title %}İstatistik Dashboard - ExpiredDomain.dev{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --chart-primary: #6366f1;
+        --chart-secondary: #00f5ff;
+        --chart-accent: #f472b6;
+        --chart-success: #10b981;
+        --chart-warning: #f59e0b;
+        --chart-info: #3b82f6;
+        --card-bg: rgba(26, 26, 36, 0.8);
+        --card-border: rgba(42, 42, 58, 0.6);
+    }
+    
+    /* Hero Section */
+    .stats-hero {
+        position: relative;
+        padding: 4rem 0 3rem;
+        text-align: center;
+        overflow: hidden;
+    }
+    
+    .stats-hero::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    
+    .stats-hero h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .stats-hero .subtitle {
+        font-size: 1.25rem;
+        color: #8888aa;
+        max-width: 600px;
+        margin: 0 auto 2rem;
+        animation: fadeInUp 0.6s ease-out 0.1s backwards;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Summary Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+    
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out backwards;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.15s; }
+    .stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .stat-card:nth-child(4) { animation-delay: 0.25s; }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--chart-primary), var(--chart-secondary));
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+    }
+    
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+    
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem;
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon.primary { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1)); color: #818cf8; }
+    .stat-icon.secondary { background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(0, 245, 255, 0.1)); color: #00f5ff; }
+    .stat-icon.accent { background: linear-gradient(135deg, rgba(244, 114, 182, 0.2), rgba(244, 114, 182, 0.1)); color: #f472b6; }
+    .stat-icon.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); color: #10b981; }
+    
+    .stat-value {
+        font-size: 2.75rem;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+        background: linear-gradient(135deg, #fff, #c8c8e0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #8888aa;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    /* Filter Section */
+    .filter-section {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        animation: fadeInUp 0.6s ease-out 0.3s backwards;
+    }
+    
+    .filter-section label {
+        color: #c8c8e0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-section input[type="date"] {
+        background: rgba(42, 42, 58, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 12px;
+        padding: 0.875rem 1.25rem;
+        color: #f4f4f5;
+        font-size: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+        transition: all 0.2s;
+        min-width: 200px;
+    }
+    
+    .filter-section input[type="date"]:focus {
+        outline: none;
+        border-color: var(--chart-primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    
+    .btn-filter {
+        background: linear-gradient(135deg, var(--chart-primary), #8b5cf6);
+        border: none;
+        border-radius: 12px;
+        padding: 0.875rem 1.75rem;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+    }
+    
+    .btn-filter.secondary {
+        background: rgba(42, 42, 58, 0.8);
+        border: 1px solid var(--card-border);
+    }
+    
+    .btn-filter.secondary:hover {
+        background: rgba(42, 42, 58, 1);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Chart Containers */
+    .charts-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .chart-container {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 24px;
+        padding: 2rem;
+        transition: all 0.3s;
+        animation: fadeInUp 0.6s ease-out backwards;
+    }
+    
+    .chart-container:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+    
+    .chart-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+    
+    @media (max-width: 1024px) {
+        .chart-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--card-border);
+    }
+    
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #f4f4f5;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .chart-title .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+    
+    .chart-wrapper {
+        position: relative;
+        height: 320px;
+    }
+    
+    .chart-wrapper-pie {
+        height: 300px;
+    }
+    
+    /* Short Domains Table */
+    .table-container {
+        max-height: 450px;
+        overflow-y: auto;
+        border-radius: 16px;
+    }
+    
+    .table-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .table-container::-webkit-scrollbar-track {
+        background: rgba(42, 42, 58, 0.3);
+        border-radius: 3px;
+    }
+    
+    .table-container::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.5);
+        border-radius: 3px;
+    }
+    
+    .short-domains-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .short-domains-table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        color: #8888aa;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: rgba(42, 42, 58, 0.5);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    
+    .short-domains-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--card-border);
+        transition: background 0.2s;
+    }
+    
+    .short-domains-table tr:hover td {
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .domain-badge {
+        display: inline-block;
+        padding: 0.4rem 0.75rem;
+        background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(99, 102, 241, 0.15));
+        border: 1px solid rgba(0, 245, 255, 0.2);
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #00f5ff;
+    }
+    
+    .tld-badge {
+        color: #a1a1aa;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .length-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .length-2 { background: linear-gradient(135deg, #fef08a, #facc15); color: #1a1a1a; }
+    .length-3 { background: linear-gradient(135deg, #86efac, #22c55e); color: #1a1a1a; }
+    .length-4 { background: linear-gradient(135deg, #93c5fd, #3b82f6); color: #1a1a1a; }
+    
+    .charset-tag {
+        display: inline-block;
+        padding: 0.3rem 0.6rem;
+        background: rgba(168, 85, 247, 0.15);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        color: #c084fc;
+    }
+    
+    .date-tag {
+        color: #8888aa;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #8888aa;
+    }
+    
+    .empty-state .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    /* Loading Spinner */
+    .loading-spinner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+    }
+    
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        border-top-color: var(--chart-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stats-hero h1 {
+            font-size: 2rem;
+        }
+        
+        .stats-hero .subtitle {
+            font-size: 1rem;
+        }
+        
+        .filter-section {
+            padding: 1.25rem;
+        }
+        
+        .chart-container {
+            padding: 1.25rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-7xl mx-auto px-6 py-8">
+    <!-- Hero Section -->
+    <section class="stats-hero">
+        <h1>📊 İstatistik Dashboard</h1>
+        <p class="subtitle">Düşen domainlerin detaylı analizi, trendler ve dağılım grafikleri ile veri odaklı içgörüler</p>
+    </section>
+    
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <label>
+            <span>🗓️</span>
+            Tarih Filtresi
+        </label>
+        <input type="date" id="dateFilter" value="">
+        <button class="btn-filter" onclick="loadAllStats()">
+            <span>🔍</span> Filtrele
+        </button>
+        <button class="btn-filter secondary" onclick="clearFilter()">
+            <span>✕</span> Temizle
+        </button>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="stats-grid" id="summaryStats">
+        <div class="stat-card">
+            <div class="stat-icon primary">📦</div>
+            <div class="stat-value" id="totalDomains">—</div>
+            <div class="stat-label">Toplam Domain</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon secondary">🌐</div>
+            <div class="stat-value" id="uniqueTlds">—</div>
+            <div class="stat-label">Farklı TLD</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon accent">📏</div>
+            <div class="stat-value" id="avgLength">—</div>
+            <div class="stat-label">Ort. Uzunluk</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">⚡</div>
+            <div class="stat-value" id="shortestDomain">—</div>
+            <div class="stat-label">En Kısa</div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <!-- Daily Drops Chart -->
+        <div class="chart-container" style="animation-delay: 0.35s;">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <div class="icon">📈</div>
+                    Günlük Drop Sayıları (Son 30 Gün)
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="dailyDropsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Pie Charts Row -->
+        <div class="chart-row">
+            <div class="chart-container" style="animation-delay: 0.4s;">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="icon">🥧</div>
+                        TLD Dağılımı
+                    </div>
+                </div>
+                <div class="chart-wrapper chart-wrapper-pie">
+                    <canvas id="tldChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container" style="animation-delay: 0.45s;">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="icon">🔤</div>
+                        Karakter Tipi Dağılımı
+                    </div>
+                </div>
+                <div class="chart-wrapper chart-wrapper-pie">
+                    <canvas id="charsetChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Length Distribution -->
+        <div class="chart-container" style="animation-delay: 0.5s;">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <div class="icon">📊</div>
+                    Uzunluk Dağılımı
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="lengthChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Weekly Trends -->
+        <div class="chart-container" style="animation-delay: 0.55s;">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <div class="icon">📅</div>
+                    Haftalık Trendler (Son 12 Hafta)
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="weeklyChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Top Short Domains -->
+        <div class="chart-container" style="animation-delay: 0.6s;">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <div class="icon">⭐</div>
+                    Premium Kısa Domainler (4 karakter ve altı)
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="short-domains-table" id="shortDomainsTable">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>TLD</th>
+                            <th>Uzunluk</th>
+                            <th>Tip</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shortDomainsTbody">
+                        <tr>
+                            <td colspan="5">
+                                <div class="loading-spinner">
+                                    <div class="spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+// Chart instances
+let dailyChart, tldChart, charsetChart, lengthChart, weeklyChart;
+
+// Color palette
+const colors = {
+    primary: '#6366f1',
+    secondary: '#00f5ff',
+    accent: '#f472b6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    info: '#3b82f6',
+    palette: [
+        '#6366f1', '#00f5ff', '#f472b6', '#10b981', '#f59e0b',
+        '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#84cc16',
+        '#f97316', '#06b6d4', '#8b5cf6', '#ef4444', '#eab308'
+    ]
+};
+
+// Chart defaults
+Chart.defaults.color = '#8888aa';
+Chart.defaults.borderColor = 'rgba(42, 42, 58, 0.6)';
+Chart.defaults.font.family = "'Outfit', sans-serif";
+
+// Format number
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return new Intl.NumberFormat('tr-TR').format(num);
+}
+
+// Load summary stats
+async function loadSummary(dateFilter = '') {
+    try {
+        const url = dateFilter 
+            ? `/api/v1/stats/summary?date_filter=${dateFilter}`
+            : '/api/v1/stats/summary';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        animateValue('totalDomains', data.total_domains);
+        animateValue('uniqueTlds', data.unique_tlds);
+        document.getElementById('avgLength').textContent = data.average_length.toFixed(1);
+        document.getElementById('shortestDomain').textContent = data.shortest_length;
+    } catch (error) {
+        console.error('Summary load error:', error);
+        document.getElementById('totalDomains').textContent = '—';
+        document.getElementById('uniqueTlds').textContent = '—';
+        document.getElementById('avgLength').textContent = '—';
+        document.getElementById('shortestDomain').textContent = '—';
+    }
+}
+
+// Animate counter
+function animateValue(elementId, endValue) {
+    const element = document.getElementById(elementId);
+    const duration = 1000;
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.floor(easeOut * endValue);
+        element.textContent = formatNumber(currentValue);
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            element.textContent = formatNumber(endValue);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
+
+// Load daily drops chart
+async function loadDailyDrops(dateFilter = '') {
+    try {
+        const response = await fetch('/api/v1/stats/daily-drops?days=30');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('dailyDropsChart').getContext('2d');
+        
+        if (dailyChart) dailyChart.destroy();
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+        
+        dailyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [{
+                    label: 'Drop Sayısı',
+                    data: data.map(d => d.count),
+                    borderColor: colors.primary,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: colors.primary,
+                    pointBorderColor: '#1a1a24',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 8,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 36, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#c8c8e0',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(42, 42, 58, 0.4)' },
+                        ticks: { padding: 10 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { padding: 10, maxRotation: 45 }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Daily drops load error:', error);
+    }
+}
+
+// Load TLD distribution
+async function loadTldDistribution(dateFilter = '') {
+    try {
+        const url = dateFilter 
+            ? `/api/v1/stats/tld-distribution?date_filter=${dateFilter}`
+            : '/api/v1/stats/tld-distribution';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const ctx = document.getElementById('tldChart').getContext('2d');
+        
+        if (tldChart) tldChart.destroy();
+        
+        tldChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => `.${d.tld}`),
+                datasets: [{
+                    data: data.map(d => d.count),
+                    backgroundColor: colors.palette,
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { 
+                            boxWidth: 14, 
+                            padding: 12,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 36, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#c8c8e0',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('TLD distribution load error:', error);
+    }
+}
+
+// Load charset distribution
+async function loadCharsetDistribution(dateFilter = '') {
+    try {
+        const url = dateFilter 
+            ? `/api/v1/stats/charset-distribution?date_filter=${dateFilter}`
+            : '/api/v1/stats/charset-distribution';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const ctx = document.getElementById('charsetChart').getContext('2d');
+        
+        if (charsetChart) charsetChart.destroy();
+        
+        charsetChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.map(d => d.label),
+                datasets: [{
+                    data: data.map(d => d.count),
+                    backgroundColor: [colors.primary, colors.secondary, colors.accent, colors.success, colors.warning],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { 
+                            boxWidth: 14, 
+                            padding: 12,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 36, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#c8c8e0',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Charset distribution load error:', error);
+    }
+}
+
+// Load length distribution
+async function loadLengthDistribution(dateFilter = '') {
+    try {
+        const url = dateFilter 
+            ? `/api/v1/stats/length-distribution?date_filter=${dateFilter}`
+            : '/api/v1/stats/length-distribution';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const ctx = document.getElementById('lengthChart').getContext('2d');
+        
+        if (lengthChart) lengthChart.destroy();
+        
+        lengthChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.length),
+                datasets: [{
+                    label: 'Domain Sayısı',
+                    data: data.map(d => d.count),
+                    backgroundColor: data.map((d, i) => {
+                        if (d.length <= 3) return 'rgba(250, 204, 21, 0.8)';
+                        if (d.length <= 5) return 'rgba(16, 185, 129, 0.8)';
+                        if (d.length <= 8) return 'rgba(99, 102, 241, 0.8)';
+                        return 'rgba(0, 245, 255, 0.8)';
+                    }),
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 36, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#c8c8e0',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(42, 42, 58, 0.4)' },
+                        ticks: { padding: 10 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        title: { 
+                            display: true, 
+                            text: 'Domain Uzunluğu', 
+                            color: '#8888aa',
+                            font: { size: 12, weight: 500 }
+                        },
+                        ticks: { padding: 10 }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Length distribution load error:', error);
+    }
+}
+
+// Load weekly trends
+async function loadWeeklyTrends() {
+    try {
+        const response = await fetch('/api/v1/stats/weekly-trends?weeks=12');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        
+        if (weeklyChart) weeklyChart.destroy();
+        
+        weeklyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => `Hafta ${d.week}`),
+                datasets: [{
+                    label: 'Haftalık Toplam',
+                    data: data.map(d => d.count),
+                    backgroundColor: 'rgba(0, 245, 255, 0.7)',
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 36, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#c8c8e0',
+                        borderColor: 'rgba(0, 245, 255, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(42, 42, 58, 0.4)' },
+                        ticks: { padding: 10 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { padding: 10 }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Weekly trends load error:', error);
+    }
+}
+
+// Load short domains
+async function loadShortDomains(dateFilter = '') {
+    try {
+        const url = dateFilter 
+            ? `/api/v1/stats/top-short-domains?max_length=4&limit=50&date_filter=${dateFilter}`
+            : '/api/v1/stats/top-short-domains?max_length=4&limit=50';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const tbody = document.getElementById('shortDomainsTbody');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <div class="icon">🔍</div>
+                            <p>Bu kriterlere uygun domain bulunamadı</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = data.map(d => `
+            <tr>
+                <td><span class="domain-badge">${d.domain}</span></td>
+                <td><span class="tld-badge">.${d.tld}</span></td>
+                <td><span class="length-badge length-${d.length}">${d.length}</span></td>
+                <td><span class="charset-tag">${d.charset || '—'}</span></td>
+                <td><span class="date-tag">${d.drop_date}</span></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Short domains load error:', error);
+        document.getElementById('shortDomainsTbody').innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="icon">⚠️</div>
+                        <p>Veriler yüklenirken hata oluştu</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Load all stats
+function loadAllStats() {
+    const dateFilter = document.getElementById('dateFilter').value;
+    
+    loadSummary(dateFilter);
+    loadDailyDrops(dateFilter);
+    loadTldDistribution(dateFilter);
+    loadCharsetDistribution(dateFilter);
+    loadLengthDistribution(dateFilter);
+    loadWeeklyTrends();
+    loadShortDomains(dateFilter);
+}
+
+// Clear filter
+function clearFilter() {
+    document.getElementById('dateFilter').value = '';
+    loadAllStats();
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', loadAllStats);
+</script>
+{% endblock %}

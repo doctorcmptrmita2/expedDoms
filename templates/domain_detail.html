@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}{{ domain }} - Domain Detay{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-card {
+        background: linear-gradient(135deg, #1e1e2e 0%, #12121a 100%);
+        border: 1px solid #313244;
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.1);
+    }
+    
+    .score-ring {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: conic-gradient(
+            var(--score-color) calc(var(--score) * 3.6deg),
+            #313244 0deg
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .score-inner {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #12121a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        padding-bottom: 1.5rem;
+        border-left: 2px solid #313244;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #6366f1;
+    }
+    
+    .timeline-item:last-child {
+        border-left-color: transparent;
+    }
+    
+    .loading-pulse {
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+    }
+    
+    .tab-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .tab-btn.active {
+        background: linear-gradient(135deg, #6366f1, #22d3ee);
+        color: #0a0a0f;
+    }
+    
+    .tab-btn:not(.active) {
+        background: #313244;
+        color: #a1a1aa;
+    }
+    
+    .tab-btn:not(.active):hover {
+        background: #3f3f5a;
+        color: #f4f4f5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="/drops" class="text-mist hover:text-neon-cyan transition-colors mb-4 inline-flex items-center gap-2">
+            ← Drops Listesine Dön
+        </a>
+        <h1 class="text-4xl font-bold text-frost mt-4 font-mono">{{ domain }}</h1>
+        <p class="text-mist mt-2">Domain detayları ve geçmiş bilgileri</p>
+    </div>
+    
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Quality Score Card -->
+        <div class="info-card flex flex-col items-center justify-center">
+            <h3 class="text-mist text-sm uppercase tracking-wider mb-4">Kalite Skoru</h3>
+            <div class="score-ring" id="scoreRing" style="--score: 0; --score-color: #6366f1;">
+                <div class="score-inner">
+                    <span id="scoreValue" class="text-3xl font-bold text-frost loading-pulse">--</span>
+                    <span id="scoreTier" class="text-xs text-mist mt-1">Yükleniyor...</span>
+                </div>
+            </div>
+            <div id="scoreBreakdown" class="mt-4 w-full space-y-2 text-sm">
+                <div class="flex justify-between text-mist">
+                    <span>Uzunluk</span>
+                    <span id="breakdownLength" class="text-frost">-</span>
+                </div>
+                <div class="flex justify-between text-mist">
+                    <span>Karakter</span>
+                    <span id="breakdownCharset" class="text-frost">-</span>
+                </div>
+                <div class="flex justify-between text-mist">
+                    <span>Pattern</span>
+                    <span id="breakdownPattern" class="text-frost">-</span>
+                </div>
+                <div class="flex justify-between text-mist">
+                    <span>TLD</span>
+                    <span id="breakdownTld" class="text-frost">-</span>
+                </div>
+                <div class="flex justify-between text-mist">
+                    <span>Kelime</span>
+                    <span id="breakdownWord" class="text-frost">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Wayback Machine Card -->
+        <div class="info-card">
+            <h3 class="text-mist text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                📅 Wayback Machine
+            </h3>
+            <div id="waybackData" class="space-y-4">
+                <div class="text-center py-8 text-mist loading-pulse">
+                    Arşiv verisi yükleniyor...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Whois Card -->
+        <div class="info-card">
+            <h3 class="text-mist text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                🔍 Whois Bilgisi
+            </h3>
+            <div id="whoisData" class="space-y-4">
+                <div class="text-center py-8 text-mist loading-pulse">
+                    Whois verisi yükleniyor...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+        <button class="tab-btn active" data-tab="snapshots">📸 Arşiv Görüntüleri</button>
+        <button class="tab-btn" data-tab="analysis">📊 Analiz</button>
+        <button class="tab-btn" data-tab="similar">🔗 Benzer Domainler</button>
+    </div>
+    
+    <!-- Tab Content -->
+    <div class="info-card">
+        <!-- Snapshots Tab -->
+        <div id="tab-snapshots" class="tab-content">
+            <h3 class="text-lg font-semibold text-frost mb-4">Wayback Machine Arşivi</h3>
+            <div id="snapshotsList" class="space-y-3">
+                <div class="text-center py-8 text-mist loading-pulse">
+                    Arşiv listesi yükleniyor...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Tab -->
+        <div id="tab-analysis" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-frost mb-4">Domain Analizi</h3>
+            <div id="analysisContent" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-void/50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-neon-cyan" id="domainLength">{{ domain.split('.')[0]|length }}</div>
+                    <div class="text-xs text-mist">Karakter Sayısı</div>
+                </div>
+                <div class="bg-void/50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-neon-purple" id="domainTld">.{{ domain.split('.')[-1] }}</div>
+                    <div class="text-xs text-mist">TLD</div>
+                </div>
+                <div class="bg-void/50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-neon-green" id="charsetType">-</div>
+                    <div class="text-xs text-mist">Karakter Tipi</div>
+                </div>
+                <div class="bg-void/50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-neon-pink" id="webAge">-</div>
+                    <div class="text-xs text-mist">Web Yaşı</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Similar Tab -->
+        <div id="tab-similar" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-frost mb-4">Benzer Domainler</h3>
+            <div id="similarDomains" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="text-center py-8 text-mist">
+                    Bu özellik yakında eklenecek...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="mt-8 flex flex-wrap gap-4">
+        <a href="https://web.archive.org/web/*/{{ domain }}" target="_blank" 
+           class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+            🌐 Wayback Machine'de Aç
+        </a>
+        <a href="https://www.whois.com/whois/{{ domain }}" target="_blank"
+           class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+            🔍 Whois Sorgula
+        </a>
+        <button onclick="copyDomain()" 
+                class="px-6 py-3 bg-steel hover:bg-steel/80 text-frost font-semibold rounded-xl transition-all">
+            📋 Domain'i Kopyala
+        </button>
+    </div>
+</div>
+
+<script>
+const domain = "{{ domain }}";
+const sld = domain.split('.')[0];
+const tld = domain.split('.').slice(1).join('.');
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        
+        this.classList.add('active');
+        document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+    });
+});
+
+// Load Quality Score
+async function loadQualityScore() {
+    try {
+        const response = await fetch('/api/v1/quality/score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: sld, tld: tld })
+        });
+        
+        const data = await response.json();
+        
+        // Update score display
+        document.getElementById('scoreValue').textContent = data.score;
+        document.getElementById('scoreValue').classList.remove('loading-pulse');
+        document.getElementById('scoreTier').textContent = data.tier;
+        
+        // Update score ring color
+        let color;
+        if (data.score >= 85) color = '#fbbf24';
+        else if (data.score >= 70) color = '#10b981';
+        else if (data.score >= 55) color = '#3b82f6';
+        else if (data.score >= 40) color = '#22d3ee';
+        else color = '#6b7280';
+        
+        document.getElementById('scoreRing').style.setProperty('--score', data.score);
+        document.getElementById('scoreRing').style.setProperty('--score-color', color);
+        
+        // Update breakdown
+        document.getElementById('breakdownLength').textContent = data.breakdown.length + '/30';
+        document.getElementById('breakdownCharset').textContent = data.breakdown.charset + '/20';
+        document.getElementById('breakdownPattern').textContent = data.breakdown.pattern + '/15';
+        document.getElementById('breakdownTld').textContent = data.breakdown.tld + '/15';
+        document.getElementById('breakdownWord').textContent = data.breakdown.word + '/20';
+        
+        // Update charset type
+        if (sld.match(/^[a-zA-Z]+$/)) {
+            document.getElementById('charsetType').textContent = 'Harf';
+        } else if (sld.match(/^[0-9]+$/)) {
+            document.getElementById('charsetType').textContent = 'Rakam';
+        } else {
+            document.getElementById('charsetType').textContent = 'Karışık';
+        }
+        
+    } catch (error) {
+        document.getElementById('scoreValue').textContent = 'Hata';
+        document.getElementById('scoreTier').textContent = '';
+    }
+}
+
+// Load Wayback Machine data
+async function loadWaybackData() {
+    try {
+        const response = await fetch(`/api/v1/history/wayback/${domain}`);
+        const data = await response.json();
+        
+        let html = '';
+        
+        if (data.wayback_snapshots > 0) {
+            html = `
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">Toplam Snapshot</span>
+                    <span class="text-frost font-bold text-xl">${data.wayback_snapshots.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">İlk Arşiv</span>
+                    <span class="text-neon-cyan">${data.first_snapshot || 'Bilinmiyor'}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">Son Arşiv</span>
+                    <span class="text-neon-green">${data.last_snapshot || 'Bilinmiyor'}</span>
+                </div>
+                ${data.web_age_years ? `
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-mist">Web Yaşı</span>
+                    <span class="text-neon-purple font-semibold">${data.web_age_years} yıl</span>
+                </div>
+                ` : ''}
+            `;
+            
+            if (data.web_age_years) {
+                document.getElementById('webAge').textContent = data.web_age_years + ' yıl';
+            }
+        } else {
+            html = `
+                <div class="text-center py-4 text-mist">
+                    <div class="text-3xl mb-2">📭</div>
+                    <p>Arşiv kaydı bulunamadı</p>
+                </div>
+            `;
+        }
+        
+        document.getElementById('waybackData').innerHTML = html;
+        
+        // Load snapshots list
+        loadSnapshots();
+        
+    } catch (error) {
+        document.getElementById('waybackData').innerHTML = `
+            <div class="text-center py-4 text-red-400">
+                <p>Veri yüklenirken hata oluştu</p>
+            </div>
+        `;
+    }
+}
+
+// Load snapshots list
+async function loadSnapshots() {
+    try {
+        const response = await fetch(`/api/v1/history/wayback/${domain}/snapshots?limit=10`);
+        const data = await response.json();
+        
+        if (data.snapshots && data.snapshots.length > 0) {
+            let html = data.snapshots.map(s => `
+                <a href="${s.archive_url}" target="_blank" 
+                   class="flex items-center justify-between p-3 bg-void/50 rounded-lg hover:bg-steel/30 transition-colors group">
+                    <div>
+                        <div class="text-frost group-hover:text-neon-cyan transition-colors">${s.date || s.timestamp}</div>
+                    </div>
+                    <span class="text-mist group-hover:text-frost">→</span>
+                </a>
+            `).join('');
+            
+            document.getElementById('snapshotsList').innerHTML = html;
+        } else {
+            document.getElementById('snapshotsList').innerHTML = `
+                <div class="text-center py-8 text-mist">
+                    <div class="text-3xl mb-2">📭</div>
+                    <p>Arşiv görüntüsü bulunamadı</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('snapshotsList').innerHTML = `
+            <div class="text-center py-4 text-mist">Yüklenemedi</div>
+        `;
+    }
+}
+
+// Load Whois data
+async function loadWhoisData() {
+    try {
+        const response = await fetch(`/api/v1/history/whois/${domain}`);
+        const data = await response.json();
+        
+        let html = '';
+        
+        if (!data.available) {
+            html = `
+                ${data.registrar ? `
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">Registrar</span>
+                    <span class="text-frost text-sm">${data.registrar}</span>
+                </div>
+                ` : ''}
+                ${data.creation_date ? `
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">Kayıt Tarihi</span>
+                    <span class="text-neon-cyan">${data.creation_date}</span>
+                </div>
+                ` : ''}
+                ${data.expiry_date ? `
+                <div class="flex justify-between items-center py-2 border-b border-steel/30">
+                    <span class="text-mist">Bitiş Tarihi</span>
+                    <span class="text-neon-pink">${data.expiry_date}</span>
+                </div>
+                ` : ''}
+                ${data.domain_age_years ? `
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-mist">Domain Yaşı</span>
+                    <span class="text-neon-purple font-semibold">${data.domain_age_years} yıl</span>
+                </div>
+                ` : ''}
+            `;
+        } else {
+            html = `
+                <div class="text-center py-4">
+                    <div class="text-3xl mb-2">✅</div>
+                    <p class="text-neon-green font-semibold">Domain Müsait!</p>
+                    <p class="text-mist text-sm mt-2">Bu domain kayıt için uygun görünüyor</p>
+                </div>
+            `;
+        }
+        
+        if (!html) {
+            html = `
+                <div class="text-center py-4 text-mist">
+                    <div class="text-3xl mb-2">🔒</div>
+                    <p>Whois verisi alınamadı</p>
+                </div>
+            `;
+        }
+        
+        document.getElementById('whoisData').innerHTML = html;
+        
+    } catch (error) {
+        document.getElementById('whoisData').innerHTML = `
+            <div class="text-center py-4 text-mist">
+                <div class="text-3xl mb-2">⏳</div>
+                <p>Whois sorgusu zaman aşımına uğradı</p>
+            </div>
+        `;
+    }
+}
+
+// Copy domain
+function copyDomain() {
+    navigator.clipboard.writeText(domain).then(() => {
+        const toast = document.getElementById('toast');
+        const message = document.getElementById('toast-message');
+        message.textContent = `Kopyalandı: ${domain}`;
+        toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 2000);
+    });
+}
+
+// Load all data
+document.addEventListener('DOMContentLoaded', () => {
+    loadQualityScore();
+    loadWaybackData();
+    loadWhoisData();
+});
+</script>
+{% endblock %}
+
+
+
+
+
+

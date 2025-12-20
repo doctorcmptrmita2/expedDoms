@@ -39,3 +39,11 @@ echo "2. Push code to Git repository"
 echo "3. Follow DEPLOY.md instructions for EasyPanel setup"
 echo ""
 
+
+
+
+
+
+
+
+

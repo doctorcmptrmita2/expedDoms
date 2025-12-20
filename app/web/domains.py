@@ -1,5 +1,5 @@
 """
-Web route for comprehensive domain listing page.
+Web route for comprehensive domain listing page with pagination.
 """
 from datetime import date, timedelta
 from typing import Optional
@@ -24,11 +24,18 @@ def domains_list(
     date_filter: Optional[date] = Query(None, alias="date"),
     tld: Optional[str] = Query(None),
     future_days: int = Query(7, ge=1, le=30, description="Days to look ahead for future drops"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, description="Items per page (30, 50, or 100)"),
     db: Session = Depends(get_db)
 ):
     """
-    Comprehensive domain listing page showing dropped and future-dropping domains.
+    Comprehensive domain listing page with pagination.
     """
+    # Validate page_size
+    valid_page_sizes = [30, 50, 100]
+    if page_size not in valid_page_sizes:
+        page_size = 50
+    
     # Initialize default values
     active_tlds = []
     selected_date = None
@@ -37,6 +44,7 @@ def domains_list(
     future_domains = []
     total_dropped = 0
     total_future = 0
+    total_pages = 1
     
     try:
         # Get all active TLDs for filter
@@ -45,7 +53,6 @@ def domains_list(
         # Determine date to show - default: show all domains
         if date_filter:
             selected_date = date_filter
-        # If no date filter, show all domains (selected_date remains None)
         
         # Get dropped domains - show all if no date filter
         query_dropped = db.query(DroppedDomain).join(Tld)
@@ -53,21 +60,28 @@ def domains_list(
         # Apply date filter only if date is specified
         if selected_date:
             query_dropped = query_dropped.filter(DroppedDomain.drop_date == selected_date)
-        # If selected_date is None, show all domains (no date filter)
         
         # Apply TLD filter
         if tld:
             query_dropped = query_dropped.filter(Tld.name == tld.lower())
         
-        # Get total count before limiting
+        # Get total count before pagination
         total_dropped = query_dropped.count()
+        total_pages = max(1, (total_dropped + page_size - 1) // page_size)
         
-        # Order and limit
+        # Ensure page is within bounds
+        if page > total_pages:
+            page = total_pages
+        
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Order and paginate
         dropped_domains_list = query_dropped.order_by(
             desc(DroppedDomain.drop_date),
             desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
             DroppedDomain.domain
-        ).limit(5000).all()  # Increased limit to show more domains
+        ).offset(offset).limit(page_size).all()
         
         dropped_domains = [
             DropRead(
@@ -81,8 +95,7 @@ def domains_list(
             for drop in dropped_domains_list
         ]
         
-        # Get future dropping domains (domains that will drop in the next N days)
-        # Only show future drops if we have a selected date, otherwise skip
+        # Get future dropping domains (only when date is selected)
         if selected_date:
             future_date = selected_date + timedelta(days=future_days)
             query_future = db.query(DroppedDomain).join(Tld)
@@ -100,7 +113,7 @@ def domains_list(
                 DroppedDomain.drop_date,
                 desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
                 DroppedDomain.domain
-            ).limit(1000).all()
+            ).limit(100).all()
             
             future_domains = [
                 DropRead(
@@ -116,35 +129,24 @@ def domains_list(
             
             total_future = query_future.count()
         else:
-            # If showing all domains, don't show future drops section
             future_domains = []
             total_future = 0
         
     except Exception as e:
         import logging
         logging.error(f"Database error in domains_list route: {e}")
-        # Values already set to defaults above
     
-    # Get date range for calendar
-    date_range = []
-    try:
-        min_date = db.query(func.min(DroppedDomain.drop_date)).scalar()
-        max_date = db.query(func.max(DroppedDomain.drop_date)).scalar()
-        
-        if min_date and max_date:
-            current = min_date
-            while current <= max_date:
-                count = db.query(func.count(DroppedDomain.id)).filter(
-                    DroppedDomain.drop_date == current
-                ).scalar()
-                date_range.append({
-                    "date": current,
-                    "count": count
-                })
-                current += timedelta(days=1)
-    except Exception as e:
-        import logging
-        logging.error(f"Error getting date range: {e}")
+    # Calculate page range for pagination
+    page_range = []
+    if total_pages <= 7:
+        page_range = list(range(1, total_pages + 1))
+    else:
+        if page <= 4:
+            page_range = list(range(1, 6)) + ['...', total_pages]
+        elif page >= total_pages - 3:
+            page_range = [1, '...'] + list(range(total_pages - 4, total_pages + 1))
+        else:
+            page_range = [1, '...'] + list(range(page - 1, page + 2)) + ['...', total_pages]
     
     return templates.TemplateResponse("domains_list.html", {
         "request": request,
@@ -156,6 +158,27 @@ def domains_list(
         "future_domains": future_domains,
         "total_dropped": total_dropped,
         "total_future": total_future,
-        "date_range": date_range[:30]  # Last 30 days
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "page_range": page_range,
+        "valid_page_sizes": valid_page_sizes
     })
 
+
+@router.get("/domain/{domain:path}", response_class=HTMLResponse)
+def domain_detail(
+    request: Request,
+    domain: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Domain detail page showing quality score, Wayback Machine data, and Whois info.
+    """
+    # Clean domain
+    domain = domain.lower().strip()
+    
+    return templates.TemplateResponse("domain_detail.html", {
+        "request": request,
+        "domain": domain
+    })

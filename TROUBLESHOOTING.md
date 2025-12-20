@@ -135,3 +135,11 @@ Sorun devam ederse:
 3. Container durumunu kontrol edin
 4. Network ayarlarını kontrol edin
 
+
+
+
+
+
+
+
+

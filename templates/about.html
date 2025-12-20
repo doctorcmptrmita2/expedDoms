@@ -3,53 +3,110 @@
 {% block title %}About{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <h1 class="text-3xl font-bold text-slate-900 mb-6">About ExpiredDomain.dev</h1>
+<div class="max-w-4xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-10 text-center">
+        <h1 class="text-4xl font-bold text-frost mb-4">About ExpiredDomain.dev</h1>
+        <p class="text-xl text-mist">Understanding how we track dropped domains</p>
+    </div>
     
-    <div class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
-        <section>
-            <h2 class="text-2xl font-bold text-slate-900 mb-3">Data Source</h2>
-            <p class="text-slate-700 leading-relaxed">
-                ExpiredDomain.dev uses zone files from ICANN's Centralized Zone Data Service (CZDS). 
-                These zone files contain the complete list of registered domains for each tracked top-level domain (TLD).
-            </p>
-        </section>
+    <div class="space-y-6">
+        <!-- Data Source -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 overflow-hidden group hover:border-neon-cyan/30 transition-colors duration-300">
+            <div class="absolute top-0 right-0 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-frost">Data Source</h2>
+                </div>
+                <p class="text-mist leading-relaxed">
+                    ExpiredDomain.dev uses zone files from <span class="text-neon-cyan font-medium">ICANN's Centralized Zone Data Service (CZDS)</span>. 
+                    These zone files contain the complete list of registered domains for each tracked top-level domain (TLD).
+                </p>
+            </div>
+        </div>
         
-        <section>
-            <h2 class="text-2xl font-bold text-slate-900 mb-3">What Are Dropped Domains?</h2>
-            <p class="text-slate-700 leading-relaxed">
-                A "dropped domain" is a domain that was present in yesterday's zone file but is missing from today's zone file. 
-                This typically indicates that the domain registration has expired or been deleted.
-            </p>
-            <p class="text-slate-700 leading-relaxed mt-3">
-                By comparing zone files day by day, we can identify which domains have been dropped, 
-                providing valuable insights for domain monitoring and research purposes.
-            </p>
-        </section>
+        <!-- What Are Dropped Domains -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 overflow-hidden group hover:border-neon-purple/30 transition-colors duration-300">
+            <div class="absolute top-0 right-0 w-40 h-40 bg-neon-purple/5 rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-frost">What Are Dropped Domains?</h2>
+                </div>
+                <p class="text-mist leading-relaxed mb-4">
+                    A <span class="text-frost font-medium">"dropped domain"</span> is a domain that was present in yesterday's zone file but is missing from today's zone file. 
+                    This typically indicates that the domain registration has expired or been deleted.
+                </p>
+                <p class="text-mist leading-relaxed">
+                    By comparing zone files day by day, we can identify which domains have been dropped, 
+                    providing valuable insights for <span class="text-neon-purple">domain monitoring and research purposes</span>.
+                </p>
+            </div>
+        </div>
         
-        <section>
-            <h2 class="text-2xl font-bold text-slate-900 mb-3">Disclaimer</h2>
-            <p class="text-slate-700 leading-relaxed">
-                This service is provided for research and monitoring purposes only. 
-                The fact that a domain appears as "dropped" does not guarantee that it is available for registration. 
-                Domains may be in grace periods, redemption periods, or may have been re-registered immediately after dropping.
-            </p>
-            <p class="text-slate-700 leading-relaxed mt-3">
-                Always verify domain availability through official registrars before attempting to register a domain.
-            </p>
-        </section>
+        <!-- How It Works -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 overflow-hidden group hover:border-neon-pink/30 transition-colors duration-300">
+            <div class="absolute top-0 right-0 w-40 h-40 bg-neon-pink/5 rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-frost">How It Works</h2>
+                </div>
+                <div class="space-y-4">
+                    {% set steps = [
+                        ("Zone files are downloaded daily from ICANN CZDS", "neon-cyan"),
+                        ("Each day's zone file is parsed to extract domains", "neon-purple"),
+                        ("Yesterday's domains are compared with today's", "neon-pink"),
+                        ("Disappeared domains are marked as dropped", "neon-green"),
+                        ("Browse, search, and filter via web interface", "neon-cyan")
+                    ] %}
+                    {% for step, color in steps %}
+                    <div class="flex items-start gap-4 p-4 rounded-xl bg-void/50 hover:bg-void transition-colors">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-{{ color }}/20 flex items-center justify-center">
+                            <span class="text-{{ color }} font-bold text-sm">{{ loop.index }}</span>
+                        </div>
+                        <p class="text-mist pt-1">{{ step }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
         
-        <section>
-            <h2 class="text-2xl font-bold text-slate-900 mb-3">How It Works</h2>
-            <ol class="list-decimal list-inside space-y-2 text-slate-700">
-                <li>Zone files are downloaded daily from ICANN CZDS (or manually placed in the data directory)</li>
-                <li>Each day's zone file is parsed to extract all registered domains</li>
-                <li>Domains from yesterday are compared with today's domains</li>
-                <li>Domains that disappeared are marked as "dropped" and stored in the database</li>
-                <li>The web interface allows you to browse, search, and filter these dropped domains</li>
-            </ol>
-        </section>
+        <!-- Disclaimer -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20 p-8">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-amber-400 mb-3">Disclaimer</h2>
+                    <p class="text-mist leading-relaxed mb-3">
+                        This service is provided for <span class="text-frost">research and monitoring purposes only</span>. 
+                        The fact that a domain appears as "dropped" does not guarantee that it is available for registration.
+                    </p>
+                    <p class="text-mist leading-relaxed">
+                        Domains may be in grace periods, redemption periods, or may have been re-registered immediately after dropping.
+                        <span class="text-amber-400 font-medium">Always verify domain availability through official registrars.</span>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
-

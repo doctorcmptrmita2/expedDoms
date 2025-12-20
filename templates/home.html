@@ -1,90 +1,317 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Discover Fresh Dropped Domains{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="text-center mb-12">
-    <h1 class="text-5xl font-bold text-slate-900 mb-4">
-        Fresh Dropped Domains, Updated Daily
-    </h1>
-    <p class="text-xl text-slate-600 mb-8">
-        ExpiredDomain.dev tracks drops from ICANN CZDS zone files for selected TLDs.
-    </p>
-    <div class="flex justify-center gap-4">
-        <a href="/drops" class="bg-slate-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-800 transition">
-            View Today's Drops
-        </a>
-        <a href="/tlds" class="bg-white text-slate-900 px-6 py-3 rounded-lg font-medium border border-slate-300 hover:bg-slate-50 transition">
-            Browse by TLD
-        </a>
-    </div>
-</div>
-
-<!-- Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-    <div class="bg-white rounded-2xl shadow-sm p-6">
-        <div class="text-3xl font-bold text-slate-900 mb-2">{{ tld_count }}</div>
-        <div class="text-slate-600">Tracked TLDs</div>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-6">
-        <div class="text-3xl font-bold text-slate-900 mb-2">
-            {% if latest_date %}{{ latest_date.strftime('%Y-%m-%d') }}{% else %}N/A{% endif %}
-        </div>
-        <div class="text-slate-600">Latest Drop Date</div>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-6">
-        <div class="text-3xl font-bold text-slate-900 mb-2">{{ latest_drop_count }}</div>
-        <div class="text-slate-600">Drops on Latest Day</div>
-    </div>
-</div>
-
-<!-- Preview Table -->
-<div class="bg-white rounded-2xl shadow-sm p-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold text-slate-900">Latest Drops Preview</h2>
-        <a href="/drops" class="text-slate-600 hover:text-slate-900 font-medium">
-            See all drops →
-        </a>
-    </div>
+<div class="max-w-7xl mx-auto px-6 py-12">
     
-    {% if preview_drops %}
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="border-b border-slate-200">
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Domain</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">TLD</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Drop Date</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Length</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Charset</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for drop in preview_drops %}
-                <tr class="border-b border-slate-100 hover:bg-slate-50">
-                    <td class="py-3 px-4 font-mono text-slate-900">{{ drop.domain }}</td>
-                    <td class="py-3 px-4 text-slate-600">.{{ drop.tld }}</td>
-                    <td class="py-3 px-4 text-slate-600">{{ drop.drop_date.strftime('%Y-%m-%d') }}</td>
-                    <td class="py-3 px-4 text-slate-600">{{ drop.length }}</td>
-                    <td class="py-3 px-4">
-                        <span class="px-2 py-1 rounded text-xs font-medium
-                            {% if drop.charset_type == 'letters' %}bg-blue-100 text-blue-800
-                            {% elif drop.charset_type == 'numbers' %}bg-green-100 text-green-800
-                            {% else %}bg-purple-100 text-purple-800{% endif %}">
-                            {{ drop.charset_type }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="text-center py-12 text-slate-500">
-        No drops available yet. Run the daily script to import data.
-    </div>
-    {% endif %}
+    <!-- Hero Section -->
+    <section class="relative py-20 text-center overflow-hidden">
+        <!-- Floating Elements -->
+        <div class="absolute top-10 left-10 w-20 h-20 border border-neon-cyan/20 rounded-2xl rotate-12 animate-float opacity-30"></div>
+        <div class="absolute top-32 right-20 w-16 h-16 border border-neon-purple/20 rounded-full animate-float opacity-30" style="animation-delay: -2s;"></div>
+        <div class="absolute bottom-20 left-1/4 w-12 h-12 bg-neon-pink/10 rounded-lg rotate-45 animate-float opacity-40" style="animation-delay: -4s;"></div>
+        
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 mb-8 animate-fade-in">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
+            </span>
+            <span class="text-sm font-medium text-neon-cyan">Updated Daily from ICANN CZDS</span>
+        </div>
+        
+        <!-- Main Heading -->
+        <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight animate-slide-up">
+            <span class="bg-gradient-to-r from-frost via-white to-frost bg-clip-text text-transparent">
+                Catch Fresh
+            </span>
+            <br>
+            <span class="bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent animate-glow">
+                Dropped Domains
+            </span>
+        </h1>
+        
+        <!-- Subtitle -->
+        <p class="text-xl md:text-2xl text-mist max-w-2xl mx-auto mb-12 animate-slide-up" style="animation-delay: 0.1s;">
+            Monitor <span class="text-frost font-semibold">premium TLDs</span> and discover 
+            <span class="text-neon-cyan">valuable domains</span> the moment they become available.
+        </p>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up" style="animation-delay: 0.2s;">
+            <a href="/drops" class="group relative inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg overflow-hidden transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-r from-neon-cyan to-neon-purple"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-neon-purple to-neon-pink opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span class="relative text-void">Explore Today's Drops</span>
+                <svg class="relative w-5 h-5 text-void transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
+            <a href="/tlds" class="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg bg-steel/50 hover:bg-steel text-frost border border-steel hover:border-mist transition-all duration-300">
+                <span>Browse by TLD</span>
+                <svg class="w-5 h-5 transform group-hover:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+    
+    <!-- Stats Section -->
+    <section class="py-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Tracked TLDs -->
+            <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-cyan/50 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            </svg>
+                        </div>
+                        <span class="text-mist font-medium">Tracked TLDs</span>
+                    </div>
+                    <div class="text-4xl font-bold text-frost font-mono">{{ tld_count }}</div>
+                    <p class="text-sm text-mist/60 mt-2">Premium extensions monitored</p>
+                </div>
+            </div>
+            
+            <!-- Latest Date -->
+            <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-purple/50 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-neon-purple/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-mist font-medium">Latest Update</span>
+                    </div>
+                    <div class="text-4xl font-bold text-frost font-mono">
+                        {% if latest_date %}{{ latest_date.strftime('%Y-%m-%d') }}{% else %}—{% endif %}
+                    </div>
+                    <p class="text-sm text-mist/60 mt-2">Most recent drop date</p>
+                </div>
+            </div>
+            
+            <!-- Drop Count -->
+            <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-pink/50 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-neon-pink/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                        <span class="text-mist font-medium">Today's Drops</span>
+                    </div>
+                    <div class="text-4xl font-bold text-frost font-mono">{{ latest_drop_count }}</div>
+                    <p class="text-sm text-mist/60 mt-2">Domains dropped today</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Latest Drops Table -->
+    <section class="py-12">
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 overflow-hidden">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-steel/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-frost flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+                        Latest Drops Preview
+                    </h2>
+                    <p class="text-mist text-sm mt-1">Fresh domains ready for registration</p>
+                </div>
+                <a href="/drops" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-steel/50 hover:bg-steel text-frost font-medium transition-all duration-200 group">
+                    View All Drops
+                    <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+            
+            {% if preview_drops %}
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-steel/30">
+                            <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Domain</th>
+                            <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                            <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Drop Date</th>
+                            <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Length</th>
+                            <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-steel/20">
+                        {% for drop in preview_drops %}
+                        <tr class="hover:bg-steel/20 transition-colors duration-150 group cursor-pointer" onclick="copyDomain('{{ drop.domain }}.{{ drop.tld }}')">
+                            <td class="py-4 px-6">
+                                <span class="font-mono text-frost font-medium group-hover:text-neon-cyan transition-colors">{{ drop.domain }}</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-neon-cyan/10 text-neon-cyan text-sm font-medium">.{{ drop.tld }}</span>
+                            </td>
+                            <td class="py-4 px-6 text-mist font-mono text-sm">{{ drop.drop_date.strftime('%Y-%m-%d') }}</td>
+                            <td class="py-4 px-6">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-steel/50 text-frost font-mono text-sm">{{ drop.length }}</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if drop.charset_type == 'letters' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-medium uppercase tracking-wide">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></span>
+                                    {{ drop.charset_type }}
+                                </span>
+                                {% elif drop.charset_type == 'numbers' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium uppercase tracking-wide">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+                                    {{ drop.charset_type }}
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 text-xs font-medium uppercase tracking-wide">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></span>
+                                    {{ drop.charset_type }}
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="py-20 text-center">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-steel/30 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-frost mb-2">No drops available yet</h3>
+                <p class="text-mist max-w-md mx-auto">Run the daily import script to fetch fresh domain drops from CZDS zone files.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    
+    <!-- Quick Stats Section -->
+    <section class="py-12">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-frost mb-4">📊 Anlık İstatistikler</h2>
+            <p class="text-mist">Veritabanındaki tüm domainlerin hızlı özeti</p>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="p-4 rounded-xl bg-gradient-to-br from-night to-carbon border border-steel/50 text-center">
+                <div id="statTotalDomains" class="text-2xl md:text-3xl font-bold text-neon-cyan font-mono">-</div>
+                <div class="text-xs text-mist mt-1">Toplam Domain</div>
+            </div>
+            <div class="p-4 rounded-xl bg-gradient-to-br from-night to-carbon border border-steel/50 text-center">
+                <div id="statUniqueTlds" class="text-2xl md:text-3xl font-bold text-neon-purple font-mono">-</div>
+                <div class="text-xs text-mist mt-1">Farklı TLD</div>
+            </div>
+            <div class="p-4 rounded-xl bg-gradient-to-br from-night to-carbon border border-steel/50 text-center">
+                <div id="statAvgLength" class="text-2xl md:text-3xl font-bold text-neon-pink font-mono">-</div>
+                <div class="text-xs text-mist mt-1">Ort. Uzunluk</div>
+            </div>
+            <div class="p-4 rounded-xl bg-gradient-to-br from-night to-carbon border border-steel/50 text-center">
+                <div id="statShortest" class="text-2xl md:text-3xl font-bold text-neon-green font-mono">-</div>
+                <div class="text-xs text-mist mt-1">En Kısa</div>
+            </div>
+        </div>
+        
+        <div class="flex justify-center">
+            <a href="/stats" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-neon-purple to-neon-pink text-void font-semibold hover:opacity-90 transition-all">
+                📈 Detaylı İstatistikleri Gör
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="py-12">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-frost mb-4">Why ExpiredDomain.dev?</h2>
+            <p class="text-mist max-w-xl mx-auto">Built for domain investors and developers who need reliable, daily updated drop data.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Feature 1 -->
+            <div class="p-6 rounded-2xl bg-carbon/50 border border-steel/30 hover:border-steel/60 transition-colors duration-300">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-cyan/20 to-neon-cyan/5 flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-frost mb-2">Daily Updates</h3>
+                <p class="text-mist text-sm">Fresh data pulled directly from ICANN CZDS zone files every day.</p>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="p-6 rounded-2xl bg-carbon/50 border border-steel/30 hover:border-steel/60 transition-colors duration-300">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-purple/20 to-neon-purple/5 flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-frost mb-2">Smart Filters</h3>
+                <p class="text-mist text-sm">Filter by TLD, length, charset type and date to find exactly what you need.</p>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="p-6 rounded-2xl bg-carbon/50 border border-steel/30 hover:border-steel/60 transition-colors duration-300">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-pink/20 to-neon-pink/5 flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-frost mb-2">Premium TLDs</h3>
+                <p class="text-mist text-sm">Focus on valuable extensions like .dev, .app, .io and more.</p>
+            </div>
+        </div>
+    </section>
+    
 </div>
+
+{% block extra_scripts %}
+<script>
+function copyDomain(domain) {
+    navigator.clipboard.writeText(domain).then(() => {
+        const toast = document.getElementById('toast');
+        const message = document.getElementById('toast-message');
+        message.textContent = `Copied: ${domain}`;
+        toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 2000);
+    });
+}
+
+// Load quick stats
+async function loadQuickStats() {
+    try {
+        const response = await fetch('/api/v1/stats/summary');
+        const data = await response.json();
+        
+        document.getElementById('statTotalDomains').textContent = data.total_domains.toLocaleString('tr-TR');
+        document.getElementById('statUniqueTlds').textContent = data.unique_tlds;
+        document.getElementById('statAvgLength').textContent = data.average_length.toFixed(1);
+        document.getElementById('statShortest').textContent = data.shortest_length;
+    } catch (error) {
+        console.error('Stats load error:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadQuickStats);
+</script>
 {% endblock %}
 
+{% endblock %}

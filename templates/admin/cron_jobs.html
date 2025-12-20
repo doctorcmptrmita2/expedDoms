@@ -1,0 +1,1158 @@
+{% extends "base.html" %}
+
+{% block title %}Cron Jobs Scheduler - Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --card-bg: rgba(26, 26, 36, 0.8);
+        --card-border: rgba(42, 42, 58, 0.6);
+    }
+    
+    /* Hero Section */
+    .cron-hero {
+        position: relative;
+        padding: 3rem 0 2rem;
+        text-align: center;
+    }
+    
+    .cron-hero h1 {
+        font-size: 2.75rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.75rem;
+    }
+    
+    .cron-hero .subtitle {
+        font-size: 1.1rem;
+        color: #8888aa;
+    }
+    
+    /* Scheduler Status Card */
+    .scheduler-status {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    .scheduler-indicator {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .status-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    .status-dot.running {
+        background: #10b981;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    }
+    
+    .status-dot.stopped {
+        background: #ef4444;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .scheduler-controls {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 1024px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 640px) {
+        .stats-grid { grid-template-columns: 1fr; }
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2.25rem;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+        color: #fff;
+        line-height: 1.2;
+    }
+    
+    .stat-label {
+        color: #8888aa;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        padding: 0.875rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.95rem;
+    }
+    
+    .action-btn.primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+    }
+    
+    .action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+    }
+    
+    .action-btn.secondary {
+        background: rgba(42, 42, 58, 0.8);
+        color: #c8c8e0;
+        border: 1px solid var(--card-border);
+    }
+    
+    .action-btn.secondary:hover {
+        background: rgba(42, 42, 58, 1);
+        color: white;
+    }
+    
+    /* Jobs Table */
+    .jobs-container {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    
+    .jobs-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--card-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .jobs-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .jobs-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .jobs-table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        color: #8888aa;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(42, 42, 58, 0.3);
+        border-bottom: 1px solid var(--card-border);
+    }
+    
+    .jobs-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--card-border);
+        transition: background 0.2s;
+    }
+    
+    .jobs-table tr:hover td {
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .tld-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(99, 102, 241, 0.15));
+        border: 1px solid rgba(0, 245, 255, 0.2);
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+        color: #00f5ff;
+    }
+    
+    .schedule-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(168, 85, 247, 0.15);
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        color: #c084fc;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-badge.success {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+    
+    .status-badge.failed {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+    
+    .status-badge.running {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+    
+    .status-badge.pending {
+        background: rgba(136, 136, 170, 0.15);
+        color: #8888aa;
+    }
+    
+    .success-rate {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+    }
+    
+    .success-rate.high { color: #10b981; }
+    .success-rate.medium { color: #f59e0b; }
+    .success-rate.low { color: #ef4444; }
+    
+    .toggle-switch {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        background: rgba(42, 42, 58, 0.8);
+        border-radius: 13px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .toggle-switch.active {
+        background: #10b981;
+    }
+    
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s;
+    }
+    
+    .toggle-switch.active::after {
+        left: 25px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-size: 1rem;
+    }
+    
+    .icon-btn.run {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+    
+    .icon-btn.run:hover {
+        background: rgba(16, 185, 129, 0.3);
+    }
+    
+    .icon-btn.logs {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+    
+    .icon-btn.logs:hover {
+        background: rgba(59, 130, 246, 0.3);
+    }
+    
+    .icon-btn.edit {
+        background: rgba(168, 85, 247, 0.15);
+        color: #a855f7;
+    }
+    
+    .icon-btn.edit:hover {
+        background: rgba(168, 85, 247, 0.3);
+    }
+    
+    .icon-btn.delete {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+    
+    .icon-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.3);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #8888aa;
+    }
+    
+    .empty-state .icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 15, 0.85);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 2rem;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal {
+        background: linear-gradient(135deg, #1a1a24, #12121a);
+        border: 1px solid var(--card-border);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 540px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--card-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    
+    .modal-close {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(42, 42, 58, 0.5);
+        border: none;
+        color: #8888aa;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+        background: rgba(42, 42, 58, 0.8);
+        color: #fff;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #c8c8e0;
+        font-weight: 500;
+    }
+    
+    .form-input, .form-select {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        background: rgba(42, 42, 58, 0.5);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-input:focus, .form-select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid var(--card-border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+    
+    /* Logs Modal */
+    .logs-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .log-item {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(42, 42, 58, 0.3);
+        margin-bottom: 0.75rem;
+    }
+    
+    .log-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .log-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: #8888aa;
+    }
+    
+    .log-stats span {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    
+    .time-ago {
+        color: #8888aa;
+        font-size: 0.85rem;
+    }
+    
+    /* Toast */
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 2000;
+    }
+    
+    .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .toast.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    
+    .toast.error {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-7xl mx-auto px-6 py-8">
+    <!-- Hero Section -->
+    <section class="cron-hero">
+        <h1>⏰ Cron Jobs Scheduler</h1>
+        <p class="subtitle">TLD zone dosyalarının otomatik indirme ve işleme zamanlaması</p>
+    </section>
+    
+    <!-- Scheduler Status -->
+    <div class="scheduler-status">
+        <div class="scheduler-indicator">
+            <div class="status-dot {{ 'running' if scheduler_status.is_running else 'stopped' }}" id="schedulerDot"></div>
+            <div>
+                <div class="text-lg font-bold text-white" id="schedulerStatusText">
+                    {{ 'Scheduler Aktif' if scheduler_status.is_running else 'Scheduler Durduruldu' }}
+                </div>
+                <div class="text-sm text-mist">
+                    <span id="nextJobInfo">
+                        {% if scheduler_status.next_run_at %}
+                            Sonraki: {{ scheduler_status.next_job }} @ {{ scheduler_status.next_run_at.strftime('%H:%M') if scheduler_status.next_run_at else 'N/A' }}
+                        {% else %}
+                            Zamanlanmış iş yok
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="scheduler-controls">
+            <button class="action-btn secondary" onclick="startScheduler()" id="startBtn">
+                ▶️ Başlat
+            </button>
+            <button class="action-btn secondary" onclick="stopScheduler()" id="stopBtn">
+                ⏹️ Durdur
+            </button>
+        </div>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));">📋</div>
+            <div class="stat-value" id="totalJobs">{{ total_jobs }}</div>
+            <div class="stat-label">Toplam Job</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));">✅</div>
+            <div class="stat-value" id="enabledJobs">{{ enabled_count }}</div>
+            <div class="stat-label">Aktif Job</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));">🔄</div>
+            <div class="stat-value" id="runningJobs">{{ running_count }}</div>
+            <div class="stat-label">Çalışıyor</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.1));">📊</div>
+            <div class="stat-value" id="successRate">{{ "%.1f"|format(success_rate) }}%</div>
+            <div class="stat-label">Başarı Oranı</div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn primary" onclick="openBulkModal()">
+            🚀 Toplu Job Oluştur
+        </button>
+        <button class="action-btn secondary" onclick="openAddModal()">
+            ➕ Yeni Job Ekle
+        </button>
+        <button class="action-btn secondary" onclick="refreshJobs()">
+            🔄 Yenile
+        </button>
+    </div>
+    
+    <!-- Jobs Table -->
+    <div class="jobs-container">
+        <div class="jobs-header">
+            <div class="jobs-title">
+                <span>📅</span>
+                Zamanlanmış İşler
+            </div>
+            <div class="text-sm text-mist">
+                <span id="jobCountText">{{ total_jobs }} job</span>
+            </div>
+        </div>
+        
+        {% if jobs %}
+        <table class="jobs-table">
+            <thead>
+                <tr>
+                    <th>TLD</th>
+                    <th>Schedule</th>
+                    <th>Son Çalışma</th>
+                    <th>Sonraki</th>
+                    <th>Durum</th>
+                    <th>Başarı</th>
+                    <th>Aktif</th>
+                    <th>Aksiyonlar</th>
+                </tr>
+            </thead>
+            <tbody id="jobsTableBody">
+                {% for job in jobs %}
+                <tr data-job-id="{{ job.id }}">
+                    <td>
+                        <span class="tld-badge">.{{ job.tld }}</span>
+                    </td>
+                    <td>
+                        <span class="schedule-badge">
+                            🕐 {{ job.schedule_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if job.last_run_at %}
+                            <span class="time-ago" title="{{ job.last_run_at }}">
+                                {{ job.last_run_at.strftime('%d/%m %H:%M') }}
+                            </span>
+                        {% else %}
+                            <span class="text-mist">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.next_run_at %}
+                            <span class="time-ago" title="{{ job.next_run_at }}">
+                                {{ job.next_run_at.strftime('%d/%m %H:%M') }}
+                            </span>
+                        {% else %}
+                            <span class="text-mist">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge {{ job.last_status.value }}">
+                            {% if job.last_status.value == 'success' %}✓{% elif job.last_status.value == 'failed' %}✕{% elif job.last_status.value == 'running' %}⟳{% else %}○{% endif %}
+                            {{ job.last_status.value|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        {% set rate = job.success_rate %}
+                        <span class="success-rate {{ 'high' if rate >= 80 else 'medium' if rate >= 50 else 'low' }}">
+                            {{ "%.0f"|format(rate) }}%
+                        </span>
+                    </td>
+                    <td>
+                        <div class="toggle-switch {{ 'active' if job.is_enabled else '' }}" 
+                             onclick="toggleJob({{ job.id }})" 
+                             data-job-id="{{ job.id }}"></div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="icon-btn run" onclick="runJob({{ job.id }})" title="Şimdi Çalıştır">
+                                ▶️
+                            </button>
+                            <button class="icon-btn logs" onclick="viewLogs({{ job.id }}, '{{ job.tld }}')" title="Logları Gör">
+                                📋
+                            </button>
+                            <button class="icon-btn edit" onclick="editJob({{ job.id }})" title="Düzenle">
+                                ✏️
+                            </button>
+                            <button class="icon-btn delete" onclick="deleteJob({{ job.id }}, '{{ job.tld }}')" title="Sil">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3 class="text-xl font-bold text-frost mb-2">Henüz cron job yok</h3>
+            <p class="mb-4">TLD zone dosyalarını otomatik işlemek için job oluşturun.</p>
+            <button class="action-btn primary" onclick="openBulkModal()">
+                🚀 Toplu Job Oluştur
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add/Edit Job Modal -->
+<div class="modal-overlay" id="jobModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="jobModalTitle">Yeni Job Ekle</h3>
+            <button class="modal-close" onclick="closeJobModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <form id="jobForm" onsubmit="saveJob(event)">
+                <input type="hidden" id="jobId" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">TLD</label>
+                    <select class="form-select" id="jobTld" required>
+                        <option value="">TLD Seçin...</option>
+                        {% for tld in tlds %}
+                        <option value="{{ tld.name }}">{{ tld.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Job Adı</label>
+                    <input type="text" class="form-input" id="jobName" placeholder="Örn: NET Zone Import" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Saat (0-23)</label>
+                        <input type="number" class="form-input" id="jobHour" min="0" max="23" value="2" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dakika (0-59)</label>
+                        <input type="number" class="form-input" id="jobMinute" min="0" max="59" value="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Job Tipi</label>
+                    <select class="form-select" id="jobType">
+                        <option value="FULL">Full (İndir + Parse)</option>
+                        <option value="DOWNLOAD_ONLY">Sadece İndir</option>
+                        <option value="PARSE_ONLY">Sadece Parse</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Öncelik (1-10)</label>
+                        <input type="number" class="form-input" id="jobPriority" min="1" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Timeout (dakika)</label>
+                        <input type="number" class="form-input" id="jobTimeout" min="1" max="480" value="60">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="action-btn secondary" onclick="closeJobModal()">İptal</button>
+            <button class="action-btn primary" onclick="saveJob(event)">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Create Modal -->
+<div class="modal-overlay" id="bulkModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">🚀 Toplu Job Oluştur</h3>
+            <button class="modal-close" onclick="closeBulkModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p class="text-mist mb-4">Tüm aktif TLD'ler için otomatik olarak cron job'lar oluşturulacak. İşler belirtilen saatten itibaren aralıklarla zamanlanacak.</p>
+            
+            <form id="bulkForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Başlangıç Saati</label>
+                        <input type="number" class="form-input" id="bulkStartHour" min="0" max="23" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Aralık (dakika)</label>
+                        <input type="number" class="form-input" id="bulkInterval" min="5" max="120" value="30">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Job Tipi</label>
+                    <select class="form-select" id="bulkJobType">
+                        <option value="FULL">Full (İndir + Parse)</option>
+                        <option value="DOWNLOAD_ONLY">Sadece İndir</option>
+                        <option value="PARSE_ONLY">Sadece Parse</option>
+                    </select>
+                </div>
+                
+                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 mt-4">
+                    <p class="text-amber-400 text-sm">
+                        ⚠️ <strong>{{ tlds|length }}</strong> TLD için job oluşturulacak.
+                        Mevcut job'lar varsa atlanacak.
+                    </p>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="action-btn secondary" onclick="closeBulkModal()">İptal</button>
+            <button class="action-btn primary" onclick="createBulkJobs()">Oluştur</button>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Modal -->
+<div class="modal-overlay" id="logsModal">
+    <div class="modal" style="max-width: 640px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="logsModalTitle">📋 Job Logları</h3>
+            <button class="modal-close" onclick="closeLogsModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="logs-list" id="logsList">
+                <div class="text-center text-mist py-8">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// API base URL
+const API_BASE = '/api/v1/cron';
+
+// Toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Scheduler controls
+async function startScheduler() {
+    try {
+        const res = await fetch(`${API_BASE}/scheduler/start`, { method: 'POST' });
+        const data = await res.json();
+        if (data.is_running) {
+            document.getElementById('schedulerDot').className = 'status-dot running';
+            document.getElementById('schedulerStatusText').textContent = 'Scheduler Aktif';
+            showToast('Scheduler başlatıldı');
+        }
+    } catch (e) {
+        showToast('Scheduler başlatılamadı', 'error');
+    }
+}
+
+async function stopScheduler() {
+    try {
+        const res = await fetch(`${API_BASE}/scheduler/stop`, { method: 'POST' });
+        const data = await res.json();
+        if (!data.is_running) {
+            document.getElementById('schedulerDot').className = 'status-dot stopped';
+            document.getElementById('schedulerStatusText').textContent = 'Scheduler Durduruldu';
+            showToast('Scheduler durduruldu');
+        }
+    } catch (e) {
+        showToast('Scheduler durdurulamadı', 'error');
+    }
+}
+
+// Job operations
+async function toggleJob(jobId) {
+    try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/toggle`, { method: 'POST' });
+        const job = await res.json();
+        
+        const toggle = document.querySelector(`.toggle-switch[data-job-id="${jobId}"]`);
+        if (job.is_enabled) {
+            toggle.classList.add('active');
+            showToast('Job aktifleştirildi');
+        } else {
+            toggle.classList.remove('active');
+            showToast('Job deaktif edildi');
+        }
+        refreshStats();
+    } catch (e) {
+        showToast('İşlem başarısız', 'error');
+    }
+}
+
+async function runJob(jobId) {
+    try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/run`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`Job #${jobId} başlatıldı`);
+            setTimeout(refreshJobs, 2000);
+        }
+    } catch (e) {
+        showToast('Job başlatılamadı', 'error');
+    }
+}
+
+async function deleteJob(jobId, tld) {
+    if (!confirm(`"${tld}" job'ını silmek istediğinizden emin misiniz?`)) return;
+    
+    try {
+        await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+        document.querySelector(`tr[data-job-id="${jobId}"]`).remove();
+        showToast('Job silindi');
+        refreshStats();
+    } catch (e) {
+        showToast('Silme başarısız', 'error');
+    }
+}
+
+// Modal operations
+function openAddModal() {
+    document.getElementById('jobModalTitle').textContent = 'Yeni Job Ekle';
+    document.getElementById('jobId').value = '';
+    document.getElementById('jobForm').reset();
+    document.getElementById('jobModal').classList.add('active');
+}
+
+function closeJobModal() {
+    document.getElementById('jobModal').classList.remove('active');
+}
+
+async function editJob(jobId) {
+    try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}`);
+        const job = await res.json();
+        
+        document.getElementById('jobModalTitle').textContent = 'Job Düzenle';
+        document.getElementById('jobId').value = job.id;
+        document.getElementById('jobTld').value = job.tld;
+        document.getElementById('jobTld').disabled = true;
+        document.getElementById('jobName').value = job.name;
+        document.getElementById('jobHour').value = job.cron_hour;
+        document.getElementById('jobMinute').value = job.cron_minute;
+        document.getElementById('jobType').value = job.job_type;
+        document.getElementById('jobPriority').value = job.priority;
+        document.getElementById('jobTimeout').value = job.timeout_minutes;
+        
+        document.getElementById('jobModal').classList.add('active');
+    } catch (e) {
+        showToast('Job bilgileri alınamadı', 'error');
+    }
+}
+
+async function saveJob(e) {
+    e.preventDefault();
+    
+    const jobId = document.getElementById('jobId').value;
+    const data = {
+        name: document.getElementById('jobName').value,
+        tld: document.getElementById('jobTld').value,
+        cron_hour: parseInt(document.getElementById('jobHour').value),
+        cron_minute: parseInt(document.getElementById('jobMinute').value),
+        job_type: document.getElementById('jobType').value,
+        priority: parseInt(document.getElementById('jobPriority').value),
+        timeout_minutes: parseInt(document.getElementById('jobTimeout').value),
+        is_enabled: true
+    };
+    
+    try {
+        const url = jobId ? `${API_BASE}/jobs/${jobId}` : `${API_BASE}/jobs`;
+        const method = jobId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            closeJobModal();
+            showToast(jobId ? 'Job güncellendi' : 'Job oluşturuldu');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            const error = await res.json();
+            showToast(error.detail || 'İşlem başarısız', 'error');
+        }
+    } catch (e) {
+        showToast('Kaydetme başarısız', 'error');
+    }
+}
+
+// Bulk create
+function openBulkModal() {
+    document.getElementById('bulkModal').classList.add('active');
+}
+
+function closeBulkModal() {
+    document.getElementById('bulkModal').classList.remove('active');
+}
+
+async function createBulkJobs() {
+    const tlds = [{% for tld in tlds %}"{{ tld.name }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    
+    const data = {
+        tlds: tlds,
+        start_hour: parseInt(document.getElementById('bulkStartHour').value),
+        interval_minutes: parseInt(document.getElementById('bulkInterval').value),
+        job_type: document.getElementById('bulkJobType').value
+    };
+    
+    try {
+        const res = await fetch(`${API_BASE}/bulk-create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        closeBulkModal();
+        showToast(`${result.created_count} job oluşturuldu`);
+        setTimeout(() => location.reload(), 500);
+    } catch (e) {
+        showToast('Toplu oluşturma başarısız', 'error');
+    }
+}
+
+// Logs
+async function viewLogs(jobId, tld) {
+    document.getElementById('logsModalTitle').textContent = `📋 .${tld} Job Logları`;
+    document.getElementById('logsModal').classList.add('active');
+    document.getElementById('logsList').innerHTML = '<div class="text-center text-mist py-8">Yükleniyor...</div>';
+    
+    try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/logs?limit=20`);
+        const data = await res.json();
+        
+        if (data.items.length === 0) {
+            document.getElementById('logsList').innerHTML = '<div class="text-center text-mist py-8">Henüz log yok</div>';
+            return;
+        }
+        
+        const html = data.items.map(log => `
+            <div class="log-item">
+                <div class="log-header">
+                    <span class="status-badge ${log.status}">${log.status}</span>
+                    <span class="time-ago">${new Date(log.started_at).toLocaleString('tr-TR')}</span>
+                </div>
+                <div class="log-stats">
+                    <span>📦 ${log.domains_found.toLocaleString()} domain</span>
+                    <span>📉 ${log.drops_detected.toLocaleString()} drop</span>
+                    <span>💾 ${log.file_size_mb.toFixed(2)} MB</span>
+                    <span>⏱️ ${log.execution_time_sec}s</span>
+                </div>
+                ${log.error_message ? `<div class="text-red-400 text-sm mt-2">${log.error_message}</div>` : ''}
+            </div>
+        `).join('');
+        
+        document.getElementById('logsList').innerHTML = html;
+    } catch (e) {
+        document.getElementById('logsList').innerHTML = '<div class="text-center text-red-400 py-8">Loglar yüklenemedi</div>';
+    }
+}
+
+function closeLogsModal() {
+    document.getElementById('logsModal').classList.remove('active');
+}
+
+// Refresh
+async function refreshJobs() {
+    location.reload();
+}
+
+async function refreshStats() {
+    try {
+        const res = await fetch(`${API_BASE}/jobs`);
+        const data = await res.json();
+        
+        document.getElementById('totalJobs').textContent = data.total;
+        document.getElementById('enabledJobs').textContent = data.enabled_count;
+        document.getElementById('runningJobs').textContent = data.running_count;
+        document.getElementById('jobCountText').textContent = `${data.total} job`;
+    } catch (e) {
+        console.error('Stats refresh failed:', e);
+    }
+}
+
+// Auto-fill job name when TLD selected
+document.getElementById('jobTld')?.addEventListener('change', function() {
+    if (!document.getElementById('jobId').value) {
+        document.getElementById('jobName').value = `${this.value.toUpperCase()} Zone Import`;
+    }
+});
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+});
+
+// Escape key closes modals
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    }
+});
+</script>
+{% endblock %}
+

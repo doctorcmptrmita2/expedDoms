@@ -96,3 +96,11 @@ EasyPanel'de şunları kontrol edin:
 
 Eğer domain üzerinden `/health` endpoint'i çalışıyorsa, sorun sadece EasyPanel'in internal health check'inde.
 
+
+
+
+
+
+
+
+

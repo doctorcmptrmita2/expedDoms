@@ -209,3 +209,11 @@ Sorun yaşarsanız:
 3. Database bağlantısını test edin
 4. Environment variables'ları doğrulayın
 
+
+
+
+
+
+
+
+

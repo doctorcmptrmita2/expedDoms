@@ -3,143 +3,334 @@
 {% block title %}CZDS Admin Panel{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <h1 class="text-3xl font-bold text-slate-900 mb-6">ICANN CZDS Admin Panel</h1>
+<div class="max-w-7xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-10">
+        <h1 class="text-4xl font-bold text-frost mb-2">ICANN CZDS Admin Panel</h1>
+        <p class="text-mist">Manage zone file downloads, parsing and data import</p>
+    </div>
     
     <!-- Authentication Section -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">Authentication</h2>
-        
-        {% if token_info and token_info.get("isValid", False) %}
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-green-800 font-medium">✓ Authenticated</p>
-                    <p class="text-sm text-green-600 mt-1">
-                        Token expires: {{ token_info.get("expiresAt", "N/A") }}
-                    </p>
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-60 h-60 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
                 </div>
-                <button id="refresh-token" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    Refresh Token
+                <h2 class="text-2xl font-bold text-frost">Authentication</h2>
+            </div>
+            
+            <!-- Server-side auth status (may be overridden by JavaScript) -->
+            <div id="auth-status-authenticated" class="hidden bg-neon-green/10 border border-neon-green/30 rounded-xl p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neon-green font-medium flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+                            Authenticated
+                        </p>
+                        <p class="text-sm text-mist mt-1">
+                            Token stored in browser. <span id="auth-username" class="text-frost"></span>
+                        </p>
+                    </div>
+                    <button id="refresh-token" class="px-4 py-2 bg-neon-green/20 text-neon-green rounded-xl hover:bg-neon-green/30 transition-colors font-medium">
+                        Refresh Token
+                    </button>
+                </div>
+            </div>
+            
+            <div id="auth-status-not-authenticated" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+                <p class="text-amber-400 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Not authenticated. Please authenticate to access CZDS API.
+                </p>
+            </div>
+            
+            <form id="auth-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-mist mb-2">CZDS Username (Email)</label>
+                        <input type="email" id="username" name="username" required
+                            class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost placeholder-mist/50 focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all"
+                            placeholder="your.email@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-mist mb-2">CZDS Password</label>
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost placeholder-mist/50 focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all duration-200">
+                    Authenticate
                 </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Drop Detection Info Box -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-blue-900/20 to-night border border-blue-500/30 p-6 mb-6 overflow-hidden">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <span class="text-xl">💡</span>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-blue-400 mb-2">Drop Detection Nasıl Çalışır?</h3>
+                <div class="text-sm text-mist space-y-2">
+                    <p>Bu sistem <strong class="text-frost">dropped domain</strong> (düşen/süresi dolan domain) tespiti yapıyor:</p>
+                    <ol class="list-decimal list-inside space-y-1 ml-2">
+                        <li><strong class="text-neon-cyan">Bugünkü</strong> zone dosyası indirilir</li>
+                        <li><strong class="text-amber-400">Dünkü</strong> zone dosyasıyla karşılaştırılır</li>
+                        <li>Dünde var ama <strong class="text-neon-pink">bugünde olmayan</strong> domainler = <strong class="text-neon-green">DROPPED</strong></li>
+                    </ol>
+                    <div class="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p class="text-amber-400 font-medium">⚠️ Önemli:</p>
+                        <p class="text-mist">Eğer <strong class="text-frost">önceki günün zone dosyası yoksa</strong>, karşılaştırma yapılamaz ve <strong class="text-frost">0 drop</strong> gösterilir. 
+                        Drop tespiti için <strong class="text-neon-cyan">en az 2 ardışık gün</strong> veri gerekir.</p>
+                    </div>
+                </div>
             </div>
         </div>
-        {% else %}
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <p class="text-yellow-800">⚠ Not authenticated. Please authenticate to access CZDS API.</p>
-        </div>
-        {% endif %}
-        
-        <form id="auth-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">CZDS Username (Email)</label>
-                    <input type="email" id="username" name="username" required
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                        placeholder="your.email@example.com">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">CZDS Password</label>
-                    <input type="password" id="password" name="password" required
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                        placeholder="••••••••">
-                </div>
-            </div>
-            <button type="submit" class="w-full md:w-auto px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition">
-                Authenticate
-            </button>
-        </form>
     </div>
     
     <!-- Zones Section -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6" id="zones-section">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-slate-900">Authorized Zones</h2>
-            <button id="refresh-zones" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">
-                Refresh List
-            </button>
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden" id="zones-section">
+        <div class="absolute top-0 right-0 w-60 h-60 bg-neon-purple/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-frost">Authorized Zones</h2>
+                </div>
+                <button id="refresh-zones" class="px-4 py-2 bg-steel/50 hover:bg-steel text-mist hover:text-frost rounded-xl transition-colors font-medium">
+                    Refresh List
+                </button>
+            </div>
+            
+            {% if zones_error %}
+            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+                <p class="text-red-400">Error: {{ zones_error }}</p>
+            </div>
+            {% endif %}
+            
+            {% if zones %}
+            <div class="mb-6">
+                <p class="text-mist">Found <span class="text-frost font-semibold">{{ zones_count }}</span> authorized zone files</p>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-steel/30">
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Zone URL</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="zones-body" class="divide-y divide-steel/20">
+                        {% for zone_url in zones %}
+                        <tr class="hover:bg-steel/20 transition-colors duration-150">
+                            <td class="py-4 px-4 font-mono text-sm text-frost/80 truncate max-w-md">{{ zone_url }}</td>
+                            <td class="py-4 px-4">
+                                {% set tld = zone_url.split('/')[-1].replace('.zone', '') %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-neon-purple/10 text-neon-purple text-sm font-medium">.{{ tld }}</span>
+                            </td>
+                            <td class="py-4 px-4">
+                                <div class="flex gap-2 flex-wrap">
+                                    <button class="zone-info-btn px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-xs hover:bg-blue-500/20 transition-colors font-medium" 
+                                        data-url="{{ zone_url }}">
+                                        ℹ️ Info
+                                    </button>
+                                    <button class="zone-download-btn px-3 py-1.5 bg-neon-cyan/10 text-neon-cyan rounded-lg text-xs hover:bg-neon-cyan/20 transition-colors font-medium"
+                                        data-url="{{ zone_url }}" data-tld="{{ zone_url.split('/')[-1].replace('.zone', '') }}" data-action="download">
+                                        ⬇️ Download
+                                    </button>
+                                    <button class="zone-parse-btn px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs hover:bg-amber-500/20 transition-colors font-medium"
+                                        data-url="{{ zone_url }}" data-tld="{{ zone_url.split('/')[-1].replace('.zone', '') }}" data-action="parse">
+                                        📝 Parse
+                                    </button>
+                                    <button class="zone-full-btn px-3 py-1.5 bg-neon-green/10 text-neon-green rounded-lg text-xs hover:bg-neon-green/20 transition-colors font-medium"
+                                        data-url="{{ zone_url }}" data-tld="{{ zone_url.split('/')[-1].replace('.zone', '') }}" data-action="full">
+                                        🚀 Download + Parse
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-mist" id="zones-empty">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-steel/30 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                </div>
+                <p>No zones found. Please authenticate and click "Refresh List" to load zones.</p>
+            </div>
+            {% endif %}
         </div>
-        
-        {% if zones_error %}
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p class="text-red-800">Error: {{ zones_error }}</p>
-        </div>
-        {% endif %}
-        
-        {% if zones %}
-        <div class="mb-4">
-            <p class="text-slate-600">Found <strong>{{ zones_count }}</strong> authorized zone files</p>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="text-left py-3 px-4 text-slate-700 font-medium">Zone URL</th>
-                        <th class="text-left py-3 px-4 text-slate-700 font-medium">TLD</th>
-                        <th class="text-left py-3 px-4 text-slate-700 font-medium">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="zones-body">
-                    {% for zone_url in zones %}
-                    <tr class="border-b border-slate-100 hover:bg-slate-50">
-                        <td class="py-3 px-4 font-mono text-sm text-slate-900">{{ zone_url }}</td>
-                        <td class="py-3 px-4 text-slate-600">
-                            {% set tld = zone_url.split('/')[-1].replace('.zone', '') %}
-                            .{{ tld }}
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex gap-2">
-                                <button class="zone-info-btn px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200" 
-                                    data-url="{{ zone_url }}">
-                                    Info
-                                </button>
-                                <button class="zone-download-btn px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200"
-                                    data-url="{{ zone_url }}" data-tld="{{ zone_url.split('/')[-1].replace('.zone', '') }}">
-                                    Download
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-8 text-slate-500" id="zones-empty">
-            No zones found. Please authenticate and click "Refresh List" to load zones.
-        </div>
-        {% endif %}
     </div>
     
-    <!-- Download Status -->
-    <div id="download-status" class="hidden bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h3 class="text-xl font-bold text-slate-900 mb-4">Download & Process Status</h3>
-        <div id="download-messages" class="space-y-2"></div>
+    <!-- Operation Status -->
+    <div id="operation-status" class="hidden relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-pink/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                        <span class="text-2xl">⚡</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-frost">Operation Status</h3>
+                </div>
+                <button id="clear-status" class="px-3 py-1.5 bg-steel/50 hover:bg-steel text-mist hover:text-frost rounded-lg text-sm transition-colors">
+                    Clear
+                </button>
+            </div>
+            <div id="operation-messages" class="space-y-3"></div>
+        </div>
+    </div>
+    
+    <!-- Download Statistics -->
+    <div id="download-stats" class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-green/10 flex items-center justify-center">
+                    <span class="text-2xl">📊</span>
+                </div>
+                <h2 class="text-2xl font-bold text-frost">Download Statistics</h2>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="stats-grid">
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Total Downloads</div>
+                    <div class="text-2xl font-bold text-frost font-mono" id="stat-total-downloads">0</div>
+                </div>
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Total Domains Found</div>
+                    <div class="text-2xl font-bold text-neon-cyan font-mono" id="stat-total-domains">0</div>
+                </div>
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Total Drops Detected</div>
+                    <div class="text-2xl font-bold text-neon-purple font-mono" id="stat-total-drops">0</div>
+                </div>
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Total Size</div>
+                    <div class="text-2xl font-bold text-neon-pink font-mono" id="stat-total-size">0 MB</div>
+                </div>
+            </div>
+            
+            <!-- TLD Breakdown -->
+            <h3 class="text-lg font-semibold text-frost mb-4">TLD Breakdown</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full" id="tld-stats-table">
+                    <thead>
+                        <tr class="border-b border-steel/30">
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Downloads</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Domains</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Drops</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Size</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Last Download</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tld-stats-body" class="divide-y divide-steel/20">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-mist/60">No download history yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     
     <!-- Quick Actions -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="/drops" class="px-6 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition text-center">
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-frost">Quick Actions</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="/drops" class="group px-6 py-4 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all duration-200 text-center">
                 View Dropped Domains
             </a>
-            <a href="/tlds" class="px-6 py-3 bg-slate-100 text-slate-900 rounded-lg font-medium hover:bg-slate-200 transition text-center">
+            <a href="/tlds" class="px-6 py-4 bg-steel/50 hover:bg-steel text-frost font-semibold rounded-xl transition-all duration-200 text-center">
                 View TLDs
+            </a>
+            <a href="/debug" class="px-6 py-4 bg-neon-pink/10 hover:bg-neon-pink/20 text-neon-pink font-semibold rounded-xl transition-all duration-200 text-center border border-neon-pink/30">
+                🔍 Debug Page
             </a>
         </div>
     </div>
 </div>
 
 <!-- Zone Info Modal -->
-<div id="zone-info-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-2xl font-bold text-slate-900">Zone File Information</h3>
-            <button id="close-modal" class="text-slate-500 hover:text-slate-700">✕</button>
+<div id="zone-info-modal" class="hidden fixed inset-0 bg-void/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 max-w-2xl w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-frost">Zone File Information</h3>
+            <button id="close-modal" class="w-10 h-10 rounded-xl bg-steel/50 hover:bg-steel text-mist hover:text-frost flex items-center justify-center transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-        <div id="zone-info-content" class="space-y-2"></div>
+        <div id="zone-info-content" class="space-y-2 text-mist"></div>
+    </div>
+</div>
+
+<!-- Action Selection Modal -->
+<div id="action-modal" class="hidden fixed inset-0 bg-void/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-frost">Select Action</h3>
+            <button id="close-action-modal" class="w-10 h-10 rounded-xl bg-steel/50 hover:bg-steel text-mist hover:text-frost flex items-center justify-center transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="action-modal-tld" class="text-center mb-6">
+            <span class="inline-flex items-center px-4 py-2 rounded-xl bg-neon-purple/20 text-neon-purple text-xl font-bold">.tld</span>
+        </div>
+        <div class="space-y-3">
+            <button id="action-download-only" class="w-full px-6 py-4 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan font-semibold rounded-xl transition-all duration-200 text-left flex items-center gap-4">
+                <span class="text-2xl">⬇️</span>
+                <div>
+                    <div class="font-bold">Download Only</div>
+                    <div class="text-sm text-mist">Just download the zone file</div>
+                </div>
+            </button>
+            <button id="action-parse-only" class="w-full px-6 py-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold rounded-xl transition-all duration-200 text-left flex items-center gap-4">
+                <span class="text-2xl">📝</span>
+                <div>
+                    <div class="font-bold">Parse Only</div>
+                    <div class="text-sm text-mist">Parse existing zone file</div>
+                </div>
+            </button>
+            <button id="action-download-parse" class="w-full px-6 py-4 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green font-semibold rounded-xl transition-all duration-200 text-left flex items-center gap-4">
+                <span class="text-2xl">🚀</span>
+                <div>
+                    <div class="font-bold">Download + Parse</div>
+                    <div class="text-sm text-mist">Download and automatically parse</div>
+                </div>
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -147,4 +338,3 @@
 {% block extra_scripts %}
 <script src="/static/js/admin.js"></script>
 {% endblock %}
-

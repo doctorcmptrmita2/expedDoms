@@ -3,85 +3,163 @@
 {% block title %}Debug & Test - ExpiredDomain.dev{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="mb-8">
-        <h1 class="text-4xl font-bold text-slate-900 mb-2">🔍 Debug & Test Page</h1>
-        <p class="text-slate-600">Check download, parse, and database status</p>
+<div class="max-w-7xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-10">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold text-frost mb-2 flex items-center gap-3">
+                    <span class="text-3xl">🔍</span> Debug & Test Page
+                </h1>
+                <p class="text-mist">Check download, parse, and database status</p>
+            </div>
+            <!-- Auto Refresh Controls -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-refresh-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-steel rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-neon-green after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-frost after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                    <span class="text-mist text-sm">Auto Refresh</span>
+                </div>
+                <select id="refresh-interval" class="px-3 py-2 bg-void border border-steel rounded-xl text-frost text-sm focus:ring-2 focus:ring-neon-cyan">
+                    <option value="5000">5s</option>
+                    <option value="10000" selected>10s</option>
+                    <option value="30000">30s</option>
+                    <option value="60000">60s</option>
+                </select>
+                <button id="manual-refresh" class="px-4 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan rounded-xl text-sm font-medium transition-colors">
+                    🔄 Refresh Now
+                </button>
+                <div id="refresh-indicator" class="hidden">
+                    <div class="animate-spin w-5 h-5 border-2 border-neon-cyan border-t-transparent rounded-full"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Last Update Info -->
+        <div class="mt-4 flex items-center gap-4">
+            <span class="text-sm text-mist">Last updated: <span id="last-update" class="text-frost font-mono">-</span></span>
+            <span id="auto-refresh-status" class="hidden px-2 py-1 rounded-lg bg-neon-green/10 text-neon-green text-xs font-medium">
+                <span class="inline-block w-2 h-2 rounded-full bg-neon-green animate-pulse mr-1"></span>
+                Auto-refreshing
+            </span>
+        </div>
     </div>
+    
+    <!-- Parse Status -->
+    <div id="parseStatus" class="hidden mb-6"></div>
+
+    {% if status.errors %}
+    <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6">
+        <h3 class="font-bold text-red-400 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Errors Detected
+        </h3>
+        <ul class="list-disc list-inside text-red-300 space-y-1">
+            {% for error in status.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
     <!-- Data Directory Status -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">📁 Data Directory Status</h2>
-        <div class="space-y-2">
-            <div class="flex items-center">
-                <span class="w-40 text-slate-600">Data Dir:</span>
-                <span class="font-mono text-sm {% if status.data_dir_exists %}text-green-600{% else %}text-red-600{% endif %}">
-                    {{ status.data_dir_path }}
-                </span>
-                {% if status.data_dir_exists %}
-                    <span class="ml-2 text-green-600">✓</span>
-                {% else %}
-                    <span class="ml-2 text-red-600">✗</span>
-                {% endif %}
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                    <span class="text-2xl">📁</span>
+                </div>
+                <h2 class="text-2xl font-bold text-frost">Data Directory Status</h2>
             </div>
-            <div class="flex items-center">
-                <span class="w-40 text-slate-600">Zones Dir:</span>
-                <span class="font-mono text-sm {% if status.zones_dir_exists %}text-green-600{% else %}text-red-600{% endif %}">
-                    {{ status.zones_dir_path }}
-                </span>
-                {% if status.zones_dir_exists %}
-                    <span class="ml-2 text-green-600">✓</span>
-                {% else %}
-                    <span class="ml-2 text-red-600">✗</span>
-                {% endif %}
+            <div class="space-y-3">
+                <div class="flex items-center p-4 rounded-xl bg-void/50">
+                    <span class="w-32 text-mist text-sm">Data Dir:</span>
+                    <span class="font-mono text-sm flex-1 {% if status.data_dir_exists %}text-neon-green{% else %}text-red-400{% endif %}">
+                        {{ status.data_dir_path }}
+                    </span>
+                    {% if status.data_dir_exists %}
+                        <span class="w-8 h-8 rounded-lg bg-neon-green/20 flex items-center justify-center text-neon-green">✓</span>
+                    {% else %}
+                        <span class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400">✗</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center p-4 rounded-xl bg-void/50">
+                    <span class="w-32 text-mist text-sm">Zones Dir:</span>
+                    <span class="font-mono text-sm flex-1 {% if status.zones_dir_exists %}text-neon-green{% else %}text-red-400{% endif %}">
+                        {{ status.zones_dir_path }}
+                    </span>
+                    {% if status.zones_dir_exists %}
+                        <span class="w-8 h-8 rounded-lg bg-neon-green/20 flex items-center justify-center text-neon-green">✓</span>
+                    {% else %}
+                        <span class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400">✗</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Database Statistics -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">📊 Database Statistics</h2>
-        {% if not status.db_available %}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 mb-4">
-                ⚠️ Database connection unavailable. Showing filesystem data only.
-            </div>
-        {% endif %}
-        {% if status.db_stats_error %}
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-                Error: {{ status.db_stats_error }}
-            </div>
-        {% else %}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div class="bg-slate-50 rounded-lg p-4">
-                    <div class="text-sm text-slate-600 mb-1">Total Drops</div>
-                    <div class="text-3xl font-bold text-slate-900">{{ status.db_stats.total_drops | default(0) }}</div>
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-purple/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                    <span class="text-2xl">📊</span>
                 </div>
-                <div class="bg-slate-50 rounded-lg p-4">
-                    <div class="text-sm text-slate-600 mb-1">Latest Drop Date</div>
-                    <div class="text-lg font-semibold text-slate-900">{{ status.db_stats.latest_drop_date | default('N/A') }}</div>
+                <h2 class="text-2xl font-bold text-frost">Database Statistics</h2>
+            </div>
+            
+            {% if not status.db_available %}
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+                <p class="text-amber-400 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Database connection unavailable. Showing filesystem data only.
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if status.db_stats_error %}
+            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                <p class="text-red-400">Error: {{ status.db_stats_error }}</p>
+            </div>
+            {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Total Drops</div>
+                    <div class="text-3xl font-bold text-frost font-mono">{{ status.db_stats.total_drops | default(0) }}</div>
                 </div>
-                <div class="bg-slate-50 rounded-lg p-4">
-                    <div class="text-sm text-slate-600 mb-1">Earliest Drop Date</div>
-                    <div class="text-lg font-semibold text-slate-900">{{ status.db_stats.earliest_drop_date | default('N/A') }}</div>
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Latest Drop Date</div>
+                    <div class="text-lg font-semibold text-neon-cyan font-mono">{{ status.db_stats.latest_drop_date | default('N/A') }}</div>
+                </div>
+                <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                    <div class="text-sm text-mist mb-1">Earliest Drop Date</div>
+                    <div class="text-lg font-semibold text-neon-purple font-mono">{{ status.db_stats.earliest_drop_date | default('N/A') }}</div>
                 </div>
             </div>
             
             {% if status.db_stats.drops_by_date %}
-            <div class="mt-4">
-                <h3 class="text-lg font-semibold text-slate-900 mb-2">Drops by Date (Last 7 Days)</h3>
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-frost mb-4">Drops by Date (Last 7 Days)</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
-                            <tr class="border-b border-slate-200">
-                                <th class="text-left py-2 px-4 font-semibold text-slate-700">Date</th>
-                                <th class="text-left py-2 px-4 font-semibold text-slate-700">Count</th>
+                            <tr class="border-b border-steel/30">
+                                <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Date</th>
+                                <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Count</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-steel/20">
                             {% for item in status.db_stats.drops_by_date %}
-                            <tr class="border-b border-slate-100">
-                                <td class="py-2 px-4">{{ item.date }}</td>
-                                <td class="py-2 px-4 font-semibold">{{ item.count }}</td>
+                            <tr class="hover:bg-steel/20 transition-colors">
+                                <td class="py-3 px-4 font-mono text-mist">{{ item.date }}</td>
+                                <td class="py-3 px-4 font-mono font-semibold text-neon-cyan">{{ item.count }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -89,31 +167,45 @@
                 </div>
             </div>
             {% endif %}
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
     <!-- TLDs and Zone Files -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">🌐 TLDs & Zone Files</h2>
-        {% if status.db_error and not status.tlds %}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 mb-4">
-                ⚠️ Database Error: {{ status.db_error }}<br>
-                Showing zone files from filesystem instead.
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-pink/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                    <span class="text-2xl">🌐</span>
+                </div>
+                <h2 class="text-2xl font-bold text-frost">TLDs & Zone Files</h2>
             </div>
-        {% endif %}
-        {% if status.tlds %}
+            
+            {% if status.db_error and not status.tlds %}
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+                <p class="text-amber-400">
+                    ⚠️ Database Error: {{ status.db_error }}<br>
+                    <span class="text-sm">Showing zone files from filesystem instead.</span>
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if status.tlds %}
             {% for tld in status.tlds %}
-            <div class="mb-6 border-b border-slate-200 pb-6 {% if not loop.last %}mb-6{% endif %}">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-xl font-bold text-slate-900">.{{ tld.name }}</h3>
-                    <div class="text-sm text-slate-600">
+            <div class="mb-6 border-b border-steel/30 pb-6 {% if loop.last %}border-b-0 pb-0 mb-0{% endif %}">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-frost flex items-center gap-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-lg bg-neon-cyan/10 text-neon-cyan">.{{ tld.name }}</span>
+                    </h3>
+                    <div class="text-sm text-mist">
                         {% if not tld.from_filesystem %}
-                            <span class="font-semibold">{{ tld.drop_count }}</span> domains in DB
+                            <span class="font-semibold text-frost">{{ tld.drop_count }}</span> domains in DB
                             {% if tld.last_import_date %}
-                                | Last import: {{ tld.last_import_date }}
+                                <span class="text-mist/60">| Last import:</span> <span class="text-neon-purple">{{ tld.last_import_date }}</span>
                             {% endif %}
                         {% else %}
-                            <span class="text-yellow-600">⚠️ From filesystem (DB unavailable)</span>
+                            <span class="text-amber-400">⚠️ From filesystem (DB unavailable)</span>
                         {% endif %}
                     </div>
                 </div>
@@ -122,38 +214,55 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="border-b border-slate-200 bg-slate-50">
-                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Zone File</th>
-                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Date</th>
-                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Size</th>
-                                <th class="text-left py-2 px-3 font-semibold text-slate-700">SLDs Found</th>
-                                <th class="text-left py-2 px-3 font-semibold text-slate-700">Status</th>
+                            <tr class="border-b border-steel/20">
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">Zone File</th>
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">Date</th>
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">Size</th>
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">SLDs Found</th>
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">Status</th>
+                                <th class="text-left py-3 px-3 text-mist font-medium text-xs uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-steel/10">
                             {% for zone in tld.zone_files %}
-                            <tr class="border-b border-slate-100">
-                                <td class="py-2 px-3 font-mono text-xs">{{ zone.name }}</td>
-                                <td class="py-2 px-3">{{ zone.date | default('N/A') }}</td>
-                                <td class="py-2 px-3">{{ zone.size_mb | default(0) }} MB</td>
-                                <td class="py-2 px-3">
-                                    {% if zone.sld_count %}
-                                        {% if zone.sld_count is string %}
-                                            <span class="text-red-600">{{ zone.sld_count }}</span>
-                                        {% else %}
-                                            <span class="font-semibold text-green-600">{{ zone.sld_count }}</span>
-                                        {% endif %}
+                            <tr class="hover:bg-steel/10 transition-colors">
+                                <td class="py-3 px-3 font-mono text-xs text-mist">{{ zone.name }}</td>
+                                <td class="py-3 px-3 text-mist">{{ zone.date | default('N/A') }}</td>
+                                <td class="py-3 px-3 text-mist">{{ zone.size_mb | default(0) }} MB</td>
+                                <td class="py-3 px-3">
+                                    {% if zone.is_parsed %}
+                                        <span class="font-semibold text-neon-cyan font-mono">{{ zone.sld_count }}</span>
+                                    {% elif zone.sld_count is string %}
+                                        <span class="text-amber-400 text-xs">{{ zone.sld_count }}</span>
                                     {% else %}
-                                        <span class="text-slate-400">-</span>
+                                        <span class="text-mist/40">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="py-2 px-3">
-                                    {% if zone.sld_count and zone.sld_count is not string %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">✓ Parsed</span>
+                                <td class="py-3 px-3">
+                                    {% if zone.is_parsed %}
+                                        <span class="px-2 py-1 text-xs rounded-lg bg-neon-green/10 text-neon-green font-medium">✓ Parsed</span>
                                     {% elif zone.error %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">✗ Error</span>
+                                        <span class="px-2 py-1 text-xs rounded-lg bg-red-500/10 text-red-400 font-medium">✗ Error</span>
                                     {% else %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">⚠ Not Parsed</span>
+                                        <span class="px-2 py-1 text-xs rounded-lg bg-amber-500/10 text-amber-400 font-medium">⚠ Not Parsed</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-3">
+                                    {% if not zone.is_parsed and not zone.error %}
+                                        {% if zone.date %}
+                                            <button onclick="parseZone('{{ tld.name }}', '{{ zone.name }}', '{{ zone.date }}')" 
+                                                class="px-3 py-1.5 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg transition-colors">
+                                                📥 Parse
+                                            </button>
+                                        {% else %}
+                                            <span class="text-xs text-red-400">⚠️ Date missing</span>
+                                        {% endif %}
+                                    {% elif zone.is_parsed %}
+                                        <span class="text-xs text-neon-green">✓ Done</span>
+                                    {% elif zone.error %}
+                                        <span class="text-xs text-red-400">✗ Error</span>
+                                    {% else %}
+                                        <span class="text-xs text-mist/40">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -162,62 +271,390 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center py-4 text-slate-500">
+                <div class="text-center py-8 text-mist/60">
                     No zone files found for this TLD.
                 </div>
                 {% endif %}
             </div>
             {% endfor %}
-        {% else %}
-            <div class="text-center py-8 text-slate-500">
+            {% else %}
+            <div class="text-center py-12 text-mist/60">
                 No TLDs found in database.
             </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
     <!-- Recent Drops -->
-    <div class="bg-white rounded-2xl shadow-sm p-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">🆕 Recent Drops (Last 20)</h2>
-        {% if status.recent_drops %}
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-slate-200">
-                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Domain</th>
-                        <th class="text-left py-2 px-4 font-semibold text-slate-700">TLD</th>
-                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Drop Date</th>
-                        <th class="text-left py-2 px-4 font-semibold text-slate-700">Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for drop in status.recent_drops %}
-                    <tr class="border-b border-slate-100">
-                        <td class="py-2 px-4 font-mono text-sm">{{ drop.domain }}</td>
-                        <td class="py-2 px-4">.{{ drop.tld }}</td>
-                        <td class="py-2 px-4">{{ drop.drop_date }}</td>
-                        <td class="py-2 px-4 text-sm text-slate-600">{{ drop.created_at | default('N/A') }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-neon-green/10 flex items-center justify-center">
+                    <span class="text-2xl">🆕</span>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-frost">Recent Drops (Last 50)</h2>
+                    <p class="text-sm text-mist">Samples from all parsed TLDs</p>
+                </div>
+            </div>
+            
+            {% if status.recent_drops %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-steel/30">
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Domain</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Drop Date</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Length</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Type</th>
+                            <th class="text-left py-3 px-4 text-mist font-medium text-sm uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-steel/20">
+                        {% for drop in status.recent_drops %}
+                        <tr class="hover:bg-steel/20 transition-colors group cursor-pointer" onclick="copyDomain('{{ drop.domain }}.{{ drop.tld }}')">
+                            <td class="py-3 px-4 font-mono text-sm text-frost group-hover:text-neon-cyan transition-colors">{{ drop.domain }}</td>
+                            <td class="py-3 px-4">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-neon-purple/10 text-neon-purple text-sm font-medium">.{{ drop.tld }}</span>
+                            </td>
+                            <td class="py-3 px-4 font-mono text-mist text-sm">{{ drop.drop_date }}</td>
+                            <td class="py-3 px-4">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-steel/50 text-frost font-mono text-xs">{{ drop.length }}</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if drop.charset_type == 'letters' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-medium">ABC</span>
+                                {% elif drop.charset_type == 'numbers' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium">123</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-medium">MIX</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                <button onclick="event.stopPropagation(); copyDomain('{{ drop.domain }}.{{ drop.tld }}')" class="px-3 py-1 bg-steel/50 hover:bg-neon-cyan/20 text-mist hover:text-neon-cyan rounded-lg text-xs font-medium transition-all">
+                                    Copy
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-mist/60">
+                No drops found in database.
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="text-center py-8 text-slate-500">
-            No drops found in database.
-        </div>
-        {% endif %}
     </div>
 
+    <!-- Import Logs -->
+    <div id="import-logs-section" class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                        <span class="text-2xl">📋</span>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-frost">Import Logs</h2>
+                        <p class="text-sm text-mist">Son işlem logları ve hata takibi</p>
+                    </div>
+                </div>
+                <button id="refresh-logs" class="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl text-sm font-medium transition-colors">
+                    🔄 Logları Yenile
+                </button>
+            </div>
+            
+            <div id="import-logs-content" class="space-y-3">
+                <div class="text-center py-8 text-mist/60">
+                    <div class="animate-pulse">Loglar yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Summary -->
-    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 class="font-semibold text-blue-900 mb-2">📝 How to Check:</h3>
-        <ul class="list-disc list-inside text-sm text-blue-800 space-y-1">
-            <li><strong>Download:</strong> Check if zone files exist in "TLDs & Zone Files" section</li>
-            <li><strong>Parse:</strong> Check "SLDs Found" column - should show number of domains</li>
-            <li><strong>DB Insert:</strong> Check "Recent Drops" section - domains should appear here</li>
-            <li><strong>Auto Process:</strong> When downloading via admin panel with <code>auto_process=true</code>, files are automatically parsed and drops are detected</li>
+    <div class="relative rounded-2xl bg-blue-500/5 border border-blue-500/20 p-6">
+        <h3 class="font-semibold text-blue-400 mb-3 flex items-center gap-2">
+            <span>📝</span> How to Check
+        </h3>
+        <ul class="list-disc list-inside text-sm text-blue-300/80 space-y-2">
+            <li><strong class="text-blue-300">Download:</strong> Check if zone files exist in "TLDs & Zone Files" section</li>
+            <li><strong class="text-blue-300">Parse:</strong> Check "SLDs Found" column - should show number of domains</li>
+            <li><strong class="text-blue-300">DB Insert:</strong> Check "Recent Drops" section - domains should appear here</li>
+            <li><strong class="text-blue-300">Auto Process:</strong> When downloading via admin panel with <code class="px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-300">auto_process=true</code>, files are automatically parsed</li>
+            <li><strong class="text-blue-300">Drop Detection:</strong> Drops tespit etmek için <strong class="text-amber-400">en az 2 ardışık gün</strong> veri gerekir - önceki gün yoksa 0 drop gösterilir</li>
         </ul>
     </div>
 </div>
-{% endblock %}
 
+<script>
+// Auto-refresh functionality
+let autoRefreshInterval = null;
+let isRefreshing = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateLastUpdateTime();
+    
+    const toggle = document.getElementById('auto-refresh-toggle');
+    const intervalSelect = document.getElementById('refresh-interval');
+    const manualRefresh = document.getElementById('manual-refresh');
+    const statusIndicator = document.getElementById('auto-refresh-status');
+    
+    // Load saved preferences
+    const savedAutoRefresh = localStorage.getItem('debug_auto_refresh') === 'true';
+    const savedInterval = localStorage.getItem('debug_refresh_interval') || '10000';
+    
+    toggle.checked = savedAutoRefresh;
+    intervalSelect.value = savedInterval;
+    
+    if (savedAutoRefresh) {
+        startAutoRefresh(parseInt(savedInterval));
+        statusIndicator.classList.remove('hidden');
+    }
+    
+    // Toggle auto-refresh
+    toggle.addEventListener('change', function() {
+        localStorage.setItem('debug_auto_refresh', this.checked);
+        
+        if (this.checked) {
+            startAutoRefresh(parseInt(intervalSelect.value));
+            statusIndicator.classList.remove('hidden');
+        } else {
+            stopAutoRefresh();
+            statusIndicator.classList.add('hidden');
+        }
+    });
+    
+    // Change interval
+    intervalSelect.addEventListener('change', function() {
+        localStorage.setItem('debug_refresh_interval', this.value);
+        
+        if (toggle.checked) {
+            stopAutoRefresh();
+            startAutoRefresh(parseInt(this.value));
+        }
+    });
+    
+    // Manual refresh
+    manualRefresh.addEventListener('click', function() {
+        refreshPage();
+    });
+});
+
+function startAutoRefresh(interval) {
+    stopAutoRefresh();
+    autoRefreshInterval = setInterval(() => {
+        refreshPage();
+    }, interval);
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+async function refreshPage() {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    
+    const indicator = document.getElementById('refresh-indicator');
+    indicator.classList.remove('hidden');
+    
+    try {
+        // Fetch the page content
+        const response = await fetch(window.location.href);
+        const html = await response.text();
+        
+        // Parse the response
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Update specific sections
+        const sections = [
+            'parseStatus',
+            // Update the main content sections by their container
+        ];
+        
+        // For now, just reload the entire page for simplicity
+        // In a more advanced implementation, we could update only specific sections
+        window.location.reload();
+        
+    } catch (error) {
+        console.error('Refresh error:', error);
+    } finally {
+        isRefreshing = false;
+        indicator.classList.add('hidden');
+    }
+}
+
+function updateLastUpdateTime() {
+    const el = document.getElementById('last-update');
+    if (el) {
+        el.textContent = new Date().toLocaleTimeString();
+    }
+}
+
+async function parseZone(tld, zoneFile, zoneDate) {
+    if (!tld || !zoneFile || !zoneDate || zoneDate === 'None' || zoneDate === 'N/A') {
+        alert('Hata: Zone dosyası tarihi eksik veya geçersiz!');
+        return;
+    }
+    
+    const statusDiv = document.getElementById('parseStatus');
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.disabled = true;
+    button.textContent = '⏳ Parsing...';
+    button.className = 'px-3 py-1.5 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-lg cursor-not-allowed';
+    
+    statusDiv.className = 'bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 mb-6';
+    statusDiv.innerHTML = `<div class="flex items-center"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400 mr-3"></div><span class="text-blue-300">Parsing <strong class="text-blue-400">${tld}/${zoneFile}</strong> and importing to database... This may take several minutes.</span></div>`;
+    statusDiv.classList.remove('hidden');
+    
+    try {
+        const url = `/api/v1/import/single-zone?tld=${encodeURIComponent(tld)}&zone_date=${encodeURIComponent(zoneDate)}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Parse failed');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            statusDiv.className = 'bg-neon-green/10 border border-neon-green/30 rounded-2xl p-6 mb-6';
+            let html = `<div class="text-neon-green"><strong>✅ Parse & Import Complete!</strong></div>`;
+            html += `<div class="mt-3 space-y-1 text-sm text-mist">`;
+            html += `<p>Zone file: <strong class="text-frost">${tld}/${zoneFile}</strong></p>`;
+            html += `<p>SLDs found: <strong class="text-neon-cyan">${data.sld_count.toLocaleString()}</strong></p>`;
+            html += `<p>Imported to DB: <strong class="text-neon-green">${data.imported.toLocaleString()}</strong> domains</p>`;
+            html += `<p>Skipped: <strong class="text-mist">${data.skipped.toLocaleString()}</strong></p>`;
+            html += `</div>`;
+            statusDiv.innerHTML = html;
+            
+            button.textContent = '✓ Parsed';
+            button.className = 'px-3 py-1.5 bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg cursor-default';
+            button.disabled = true;
+            
+            // Notify other tabs/windows about the update
+            localStorage.setItem('debug_last_update', Date.now().toString());
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        } else {
+            throw new Error('Parse failed');
+        }
+    } catch (error) {
+        statusDiv.className = 'bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6';
+        statusDiv.innerHTML = `<div class="text-red-400"><strong>❌ Error parsing ${tld}/${zoneFile}:</strong> ${error.message}</div>`;
+        
+        button.disabled = false;
+        button.textContent = originalText;
+        button.className = 'px-3 py-1.5 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg transition-colors';
+    }
+}
+
+// Listen for updates from other tabs
+window.addEventListener('storage', function(e) {
+    if (e.key === 'debug_last_update') {
+        // Another tab made an update, refresh this page
+        setTimeout(() => window.location.reload(), 1000);
+    }
+});
+
+// Copy domain to clipboard
+function copyDomain(domain) {
+    navigator.clipboard.writeText(domain).then(() => {
+        const toast = document.getElementById('toast');
+        const message = document.getElementById('toast-message');
+        if (toast && message) {
+            message.textContent = `Copied: ${domain}`;
+            toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2000);
+        }
+    });
+}
+
+// Load import logs
+async function loadImportLogs() {
+    const container = document.getElementById('import-logs-content');
+    try {
+        const response = await fetch('/api/v1/import/logs?limit=10');
+        const data = await response.json();
+        
+        if (data.logs && data.logs.length > 0) {
+            let html = '<div class="space-y-3">';
+            for (const log of data.logs) {
+                const statusColor = log.success ? 'neon-green' : 'red-400';
+                const statusIcon = log.success ? '✅' : '❌';
+                const duration = log.duration_seconds ? log.duration_seconds.toFixed(1) + 's' : 'N/A';
+                
+                html += `
+                    <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">${statusIcon}</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-neon-purple/10 text-neon-purple text-sm font-medium">.${log.tld}</span>
+                                <span class="text-mist text-sm">${log.operation}</span>
+                            </div>
+                            <div class="text-xs text-mist">
+                                ${new Date(log.start_time).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="flex gap-4 text-xs text-mist">
+                            <span>Süre: <strong class="text-frost">${duration}</strong></span>
+                            ${log.stats?.imported !== undefined ? `<span>İçe aktarılan: <strong class="text-neon-green">${log.stats.imported.toLocaleString()}</strong></span>` : ''}
+                            ${log.stats?.skipped !== undefined ? `<span>Atlanan: <strong class="text-mist">${log.stats.skipped.toLocaleString()}</strong></span>` : ''}
+                            ${log.stats?.errors !== undefined && log.stats.errors > 0 ? `<span>Hata: <strong class="text-red-400">${log.stats.errors}</strong></span>` : ''}
+                        </div>
+                        ${log.errors && log.errors.length > 0 ? `
+                            <div class="mt-2 p-2 rounded-lg bg-red-500/10 text-red-400 text-xs">
+                                <strong>Hatalar:</strong>
+                                <ul class="list-disc list-inside mt-1">
+                                    ${log.errors.map(e => `<li>${e.message}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-8 text-mist/60">Henüz import logu yok.</div>';
+        }
+    } catch (error) {
+        container.innerHTML = `<div class="text-center py-8 text-red-400">Log yüklenemedi: ${error.message}</div>`;
+    }
+}
+
+// Load logs on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadImportLogs();
+    
+    document.getElementById('refresh-logs')?.addEventListener('click', function() {
+        loadImportLogs();
+    });
+});
+</script>
+{% endblock %}

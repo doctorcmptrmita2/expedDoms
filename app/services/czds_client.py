@@ -278,38 +278,73 @@ class CZDSClient:
         # Ensure parent directory exists
         target_path.parent.mkdir(parents=True, exist_ok=True)
         
-        try:
-            response = requests.get(zone_url, headers=headers, stream=True, timeout=600)
-            response.raise_for_status()
-            
-            # Download and decompress gzip file
-            # CZDS returns gzip-compressed files
-            content = response.content
-            
-            # Try to decompress if it's gzip
+        # Retry configuration
+        max_retries = 3
+        timeout_seconds = 1800  # 30 minutes for large files
+        retry_delay = 5  # seconds between retries
+        
+        last_error = None
+        
+        for attempt in range(max_retries):
             try:
-                decompressed = gzip.decompress(content)
-                with open(target_path, "wb") as f:
-                    f.write(decompressed)
-            except Exception:
-                # If not gzip or decompression fails, save as-is
-                with open(target_path, "wb") as f:
-                    f.write(content)
-            
-            return target_path
-            
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to download zone file: {e}")
-        except Exception as e:
-            # Fallback: try saving raw content
-            try:
-                response = requests.get(zone_url, headers=headers, timeout=600)
+                # Use streaming for large files
+                response = requests.get(
+                    zone_url, 
+                    headers=headers, 
+                    stream=True, 
+                    timeout=(30, timeout_seconds)  # (connect timeout, read timeout)
+                )
                 response.raise_for_status()
-                with open(target_path, "wb") as f:
-                    f.write(response.content)
+                
+                # Download in chunks and write to temp file first
+                temp_path = target_path.with_suffix('.tmp')
+                total_size = 0
+                
+                with open(temp_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                        if chunk:
+                            f.write(chunk)
+                            total_size += len(chunk)
+                
+                # Try to decompress if it's gzip
+                try:
+                    with open(temp_path, "rb") as f:
+                        compressed_content = f.read()
+                    decompressed = gzip.decompress(compressed_content)
+                    with open(target_path, "wb") as f:
+                        f.write(decompressed)
+                    temp_path.unlink()  # Remove temp file
+                except Exception:
+                    # If not gzip or decompression fails, rename temp to target
+                    if temp_path.exists():
+                        if target_path.exists():
+                            target_path.unlink()
+                        temp_path.rename(target_path)
+                
                 return target_path
-            except Exception as e2:
-                raise Exception(f"Failed to download and save zone file: {e2}")
+                
+            except (requests.exceptions.ConnectionError, 
+                    requests.exceptions.Timeout,
+                    requests.exceptions.ChunkedEncodingError,
+                    ConnectionResetError) as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
+                    # Get fresh token for retry
+                    token = self._ensure_valid_token()
+                    headers["Authorization"] = f"Bearer {token}"
+                    continue
+                    
+            except requests.RequestException as e:
+                last_error = e
+                break
+                
+            except Exception as e:
+                last_error = e
+                break
+        
+        # All retries failed
+        raise requests.RequestException(f"Failed to download zone file after {max_retries} attempts: {last_error}")
     
     def download_zone_by_tld(self, tld: str, target_date: date) -> Path:
         """

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     CZDS_DOWNLOAD_BASE_URL: str = "https://czds-download-api.icann.org"
     
     # Tracked TLDs (comma-separated)
-    TRACKED_TLDS: str = "zip,works,dev,app"
+    TRACKED_TLDS: str = "zip,works,dev,app,style,org,pro,trade,travel"
     
     # Data directory for zone files
     DATA_DIR: str = "./data"

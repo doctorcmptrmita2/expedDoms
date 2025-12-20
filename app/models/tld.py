@@ -28,3 +28,11 @@ class Tld(Base):
     def __repr__(self) -> str:
         return f"<Tld(name={self.name}, is_active={self.is_active})>"
 
+
+
+
+
+
+
+
+

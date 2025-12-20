@@ -80,3 +80,11 @@ def build_domain_name(sld: str, tld: str) -> str:
     """
     return f"{sld}.{tld.lower()}"
 
+
+
+
+
+
+
+
+

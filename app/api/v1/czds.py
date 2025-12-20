@@ -173,54 +173,76 @@ async def download_zone(
                 from app.services.zone_parser import extract_slds_from_zone
                 from app.services.drop_detector import compute_dropped_slds, persist_drops
                 from datetime import timedelta
+                import re
                 
                 db = SessionLocal()
                 try:
+                    # If target_date not provided, extract from filename
+                    actual_date = target_date
+                    if not actual_date:
+                        # Try to extract date from filename (e.g., 20251210.zone)
+                        match = re.search(r'(\d{8})\.zone$', path.name)
+                        if match:
+                            date_str = match.group(1)
+                            actual_date = dt.strptime(date_str, "%Y%m%d").date()
+                        else:
+                            # Use today's date as fallback
+                            actual_date = dt.now().date()
+                    
+                    # ALWAYS get or create TLD first
+                    tld_obj = db.query(Tld).filter(Tld.name == request.tld.lower()).first()
+                    if not tld_obj:
+                        tld_obj = Tld(
+                            name=request.tld.lower(),
+                            display_name=request.tld.lower(),
+                            is_active=True
+                        )
+                        db.add(tld_obj)
+                        db.commit()
+                        db.refresh(tld_obj)
+                    
                     # Parse zone file
                     slds = extract_slds_from_zone(path, request.tld)
                     
                     process_info = {
                         "sld_count": len(slds),
-                        "parsed": True
+                        "parsed": True,
+                        "tld_created": True
                     }
                     
                     # Try to detect drops
-                    if target_date:
-                        prev_date = target_date - timedelta(days=1)
-                        from app.core.config import get_settings
-                        settings = get_settings()
-                        prev_zone_path = Path(settings.DATA_DIR) / "zones" / request.tld.lower() / f"{prev_date.strftime('%Y%m%d')}.zone"
+                    prev_date = actual_date - timedelta(days=1)
+                    from app.core.config import get_settings
+                    settings = get_settings()
+                    prev_zone_path = Path(settings.DATA_DIR) / "zones" / request.tld.lower() / f"{prev_date.strftime('%Y%m%d')}.zone"
+                    
+                    if prev_zone_path.exists():
+                        # Load previous day's SLDs
+                        prev_set = extract_slds_from_zone(prev_zone_path, request.tld.lower())
                         
-                        if prev_zone_path.exists():
-                            # Get or create TLD
-                            tld_obj = db.query(Tld).filter(Tld.name == request.tld.lower()).first()
-                            if not tld_obj:
-                                tld_obj = Tld(
-                                    name=request.tld.lower(),
-                                    display_name=request.tld.lower(),
-                                    is_active=True
-                                )
-                                db.add(tld_obj)
-                                db.commit()
-                                db.refresh(tld_obj)
-                            
-                            # Load previous day's SLDs
-                            prev_set = extract_slds_from_zone(prev_zone_path, request.tld.lower())
-                            
-                            # Compute drops
-                            dropped_slds = compute_dropped_slds(prev_set, slds)
-                            
-                            # Persist drops
-                            persisted_count = 0
-                            if dropped_slds:
-                                persisted_count = persist_drops(db, tld_obj, prev_date, dropped_slds)
-                            
-                            process_info["drops_detected"] = True
-                            process_info["dropped_count"] = len(dropped_slds)
-                            process_info["persisted_count"] = persisted_count
-                        else:
-                            process_info["drops_detected"] = False
-                            process_info["message"] = f"Previous day zone file not found"
+                        # Compute drops
+                        dropped_slds = compute_dropped_slds(prev_set, slds)
+                        
+                        # Persist drops
+                        persisted_count = 0
+                        if dropped_slds:
+                            persisted_count = persist_drops(db, tld_obj, prev_date, dropped_slds)
+                        
+                        process_info["drops_detected"] = True
+                        process_info["dropped_count"] = len(dropped_slds)
+                        process_info["persisted_count"] = persisted_count
+                        
+                        # Update TLD metadata
+                        tld_obj.last_import_date = actual_date
+                        tld_obj.last_drop_count = persisted_count
+                        db.commit()
+                    else:
+                        process_info["drops_detected"] = False
+                        process_info["message"] = f"Previous day zone file not found: {prev_zone_path.name}"
+                        
+                        # Still update TLD metadata
+                        tld_obj.last_import_date = actual_date
+                        db.commit()
                     
                     result["data"]["processed"] = True
                     result["data"]["process_result"] = process_info

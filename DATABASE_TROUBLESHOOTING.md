@@ -134,3 +134,11 @@ python3 -c "import socket; s = socket.socket(); s.connect(('mysql', 3306)); prin
 5. Container'ı restart edin
 6. Tekrar deneyin: `alembic upgrade head`
 
+
+
+
+
+
+
+
+

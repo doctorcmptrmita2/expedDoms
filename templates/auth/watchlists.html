@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Watchlist'lerim{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-frost mb-2">Watchlist'lerim</h1>
+            <p class="text-mist">Domain izleme listelerinizi yönetin ({{ watchlists|length }}/{{ max_watchlists }})</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/dashboard" class="px-4 py-2 rounded-lg bg-steel/50 hover:bg-steel text-frost font-medium transition-colors">
+                ← Dashboard
+            </a>
+            {% if watchlists|length < max_watchlists %}
+            <button 
+                onclick="showCreateModal()"
+                class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold hover:opacity-90 transition-opacity"
+            >
+                + Yeni Watchlist
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Watchlists Grid -->
+    {% if watchlists %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for wl in watchlists %}
+        <div class="bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl p-6 hover:border-neon-cyan/30 transition-all duration-300">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-frost mb-1">{{ wl.name }}</h3>
+                    <div class="flex items-center gap-2">
+                        {% if wl.is_active %}
+                        <span class="inline-flex items-center gap-1 text-xs text-neon-green">
+                            <span class="w-1.5 h-1.5 rounded-full bg-neon-green"></span>
+                            Aktif
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 text-xs text-mist/60">
+                            <span class="w-1.5 h-1.5 rounded-full bg-mist/50"></span>
+                            Pasif
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button 
+                        onclick="editWatchlist({{ wl.id }})"
+                        class="p-2 rounded-lg hover:bg-steel/50 text-mist hover:text-neon-cyan transition-colors"
+                        title="Düzenle"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+                    <button 
+                        onclick="deleteWatchlist({{ wl.id }})"
+                        class="p-2 rounded-lg hover:bg-red-500/20 text-mist hover:text-red-400 transition-colors"
+                        title="Sil"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="space-y-2 text-sm">
+                {% if wl.domain_pattern %}
+                <div class="flex items-center gap-2 text-mist">
+                    <svg class="w-4 h-4 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    Pattern: <span class="text-frost font-mono">{{ wl.domain_pattern }}</span>
+                </div>
+                {% endif %}
+                
+                {% if wl.tld_filter %}
+                <div class="flex items-center gap-2 text-mist">
+                    <svg class="w-4 h-4 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+                    </svg>
+                    TLD: <span class="text-frost">.{{ wl.tld_filter.replace(',', ', .') }}</span>
+                </div>
+                {% endif %}
+                
+                {% if wl.min_length or wl.max_length %}
+                <div class="flex items-center gap-2 text-mist">
+                    <svg class="w-4 h-4 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+                    </svg>
+                    Uzunluk: <span class="text-frost">{{ wl.min_length or '1' }} - {{ wl.max_length or '63' }}</span>
+                </div>
+                {% endif %}
+                
+                {% if wl.charset_filter %}
+                <div class="flex items-center gap-2 text-mist">
+                    <svg class="w-4 h-4 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Tip: <span class="text-frost capitalize">{{ wl.charset_filter }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Notifications -->
+            <div class="mt-4 pt-4 border-t border-steel/30 flex items-center gap-3">
+                <span class="text-xs text-mist/60">Bildirimler:</span>
+                {% if wl.notify_email %}
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Email
+                </span>
+                {% endif %}
+                {% if wl.notify_telegram %}
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-400/10 text-blue-300 text-xs">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                    </svg>
+                    Telegram
+                </span>
+                {% endif %}
+                {% if wl.notify_discord %}
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                    Discord
+                </span>
+                {% endif %}
+                {% if not wl.notify_email and not wl.notify_telegram and not wl.notify_discord %}
+                <span class="text-xs text-mist/40">Kapalı</span>
+                {% endif %}
+            </div>
+            
+            <!-- Created Date -->
+            <div class="mt-3 text-xs text-mist/40">
+                Oluşturulma: {{ wl.created_at.strftime('%d.%m.%Y %H:%M') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-steel/30 flex items-center justify-center">
+            <svg class="w-10 h-10 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-frost mb-2">Henüz watchlist yok</h3>
+        <p class="text-mist max-w-md mx-auto mb-6">Watchlist oluşturarak kriterlere uyan domain'ler düştüğünde bildirim alabilirsiniz.</p>
+        <button 
+            onclick="showCreateModal()"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold hover:opacity-90 transition-opacity"
+        >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            İlk Watchlist'inizi Oluşturun
+        </button>
+    </div>
+    {% endif %}
+    
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="watchlistModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-void/80 backdrop-blur-sm" onclick="hideModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="relative bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl w-full max-w-lg p-6">
+            <h2 id="modalTitle" class="text-xl font-bold text-frost mb-6">Yeni Watchlist</h2>
+            
+            <form id="watchlistForm" class="space-y-4">
+                <input type="hidden" id="watchlistId" value="">
+                
+                <div>
+                    <label class="block text-sm font-medium text-frost mb-2">İsim</label>
+                    <input 
+                        type="text" 
+                        id="wlName"
+                        required
+                        class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost placeholder-mist/50 transition-all duration-200 outline-none"
+                        placeholder="Kısa dev domain'leri"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-frost mb-2">Domain Pattern <span class="text-mist/60">(opsiyonel)</span></label>
+                    <input 
+                        type="text" 
+                        id="wlPattern"
+                        class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost placeholder-mist/50 transition-all duration-200 outline-none"
+                        placeholder="*tech*, short*, abc"
+                    >
+                    <p class="text-xs text-mist/60 mt-1">* karakteri joker olarak kullanılabilir</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-frost mb-2">TLD Filtresi <span class="text-mist/60">(opsiyonel)</span></label>
+                    <input 
+                        type="text" 
+                        id="wlTld"
+                        class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost placeholder-mist/50 transition-all duration-200 outline-none"
+                        placeholder="dev,app,io"
+                    >
+                    <p class="text-xs text-mist/60 mt-1">Virgülle ayırarak birden fazla TLD</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-frost mb-2">Min Uzunluk</label>
+                        <input 
+                            type="number" 
+                            id="wlMinLen"
+                            min="1"
+                            max="63"
+                            class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost placeholder-mist/50 transition-all duration-200 outline-none"
+                            placeholder="1"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-frost mb-2">Max Uzunluk</label>
+                        <input 
+                            type="number" 
+                            id="wlMaxLen"
+                            min="1"
+                            max="63"
+                            class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost placeholder-mist/50 transition-all duration-200 outline-none"
+                            placeholder="63"
+                        >
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-frost mb-2">Karakter Tipi</label>
+                    <select 
+                        id="wlCharset"
+                        class="w-full px-4 py-3 rounded-xl bg-carbon border border-steel focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 text-frost transition-all duration-200 outline-none"
+                    >
+                        <option value="">Tümü</option>
+                        <option value="letters">Sadece Harfler</option>
+                        <option value="numbers">Sadece Rakamlar</option>
+                        <option value="mixed">Karışık</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-frost mb-3">Bildirimler</label>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="wlEmail" checked class="w-4 h-4 rounded border-steel bg-carbon text-neon-cyan focus:ring-neon-cyan/50">
+                            <span class="text-sm text-mist">Email</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="wlTelegram" class="w-4 h-4 rounded border-steel bg-carbon text-neon-cyan focus:ring-neon-cyan/50">
+                            <span class="text-sm text-mist">Telegram</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="wlDiscord" class="w-4 h-4 rounded border-steel bg-carbon text-neon-cyan focus:ring-neon-cyan/50">
+                            <span class="text-sm text-mist">Discord</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 pt-4">
+                    <button 
+                        type="button"
+                        onclick="hideModal()"
+                        class="flex-1 py-3 px-4 rounded-xl font-semibold text-frost bg-steel/50 hover:bg-steel transition-colors"
+                    >
+                        İptal
+                    </button>
+                    <button 
+                        type="submit"
+                        class="flex-1 py-3 px-4 rounded-xl font-semibold text-void bg-gradient-to-r from-neon-cyan to-neon-purple hover:opacity-90 transition-opacity"
+                    >
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+function showCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Yeni Watchlist';
+    document.getElementById('watchlistId').value = '';
+    document.getElementById('wlName').value = '';
+    document.getElementById('wlPattern').value = '';
+    document.getElementById('wlTld').value = '';
+    document.getElementById('wlMinLen').value = '';
+    document.getElementById('wlMaxLen').value = '';
+    document.getElementById('wlCharset').value = '';
+    document.getElementById('wlEmail').checked = true;
+    document.getElementById('wlTelegram').checked = false;
+    document.getElementById('wlDiscord').checked = false;
+    document.getElementById('watchlistModal').classList.remove('hidden');
+}
+
+function hideModal() {
+    document.getElementById('watchlistModal').classList.add('hidden');
+}
+
+function editWatchlist(id) {
+    // TODO: Fetch watchlist data and populate form
+    document.getElementById('modalTitle').textContent = 'Watchlist Düzenle';
+    document.getElementById('watchlistId').value = id;
+    document.getElementById('watchlistModal').classList.remove('hidden');
+}
+
+async function deleteWatchlist(id) {
+    if (!confirm('Bu watchlist silinecek. Emin misiniz?')) {
+        return;
+    }
+    
+    try {
+        const token = document.cookie.split('access_token=')[1]?.split(';')[0] || '';
+        const response = await fetch(`/api/v1/users/watchlists/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token
+            }
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Bir hata oluştu');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Bir hata oluştu');
+    }
+}
+
+document.getElementById('watchlistForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('watchlistId').value;
+    const data = {
+        name: document.getElementById('wlName').value,
+        domain_pattern: document.getElementById('wlPattern').value || null,
+        tld_filter: document.getElementById('wlTld').value || null,
+        min_length: document.getElementById('wlMinLen').value ? parseInt(document.getElementById('wlMinLen').value) : null,
+        max_length: document.getElementById('wlMaxLen').value ? parseInt(document.getElementById('wlMaxLen').value) : null,
+        charset_filter: document.getElementById('wlCharset').value || null,
+        notify_email: document.getElementById('wlEmail').checked,
+        notify_telegram: document.getElementById('wlTelegram').checked,
+        notify_discord: document.getElementById('wlDiscord').checked,
+        is_active: true
+    };
+    
+    try {
+        const token = document.cookie.split('access_token=')[1]?.split(';')[0] || '';
+        const url = id ? `/api/v1/users/watchlists/${id}` : '/api/v1/users/watchlists';
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Bir hata oluştu');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Bir hata oluştu');
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
+
+
+
+
+
+

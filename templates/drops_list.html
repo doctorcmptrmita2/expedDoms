@@ -3,137 +3,168 @@
 {% block title %}Dropped Domains{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-bold text-slate-900 mb-6">Dropped Domains</h1>
+<div class="max-w-7xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-frost mb-2">Dropped Domains</h1>
+        <p class="text-mist">Browse and filter recently dropped domains</p>
+    </div>
 
-<!-- Filter Bar -->
-<div class="bg-white rounded-2xl shadow-sm p-6 mb-6 sticky top-4 z-10">
-    <form id="filter-form" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Date Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                <input type="date" id="date-filter" name="date" value="{% if selected_date %}{{ selected_date.strftime('%Y-%m-%d') }}{% endif %}" 
-                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+    <!-- Filter Bar -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 mb-6 sticky top-4 z-20 backdrop-blur-xl">
+        <form id="filter-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Date Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-mist mb-2">Date</label>
+                    <input type="date" id="date-filter" name="date" value="{% if selected_date %}{{ selected_date.strftime('%Y-%m-%d') }}{% endif %}" 
+                        class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                </div>
+                
+                <!-- TLD Filter -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-mist mb-2">TLD</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="tld-filter px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if not selected_tld %}bg-neon-cyan text-void{% else %}bg-steel/50 text-mist hover:bg-steel hover:text-frost{% endif %}" data-tld="">
+                            All
+                        </button>
+                        {% for tld in active_tlds %}
+                        <button type="button" class="tld-filter px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if selected_tld == tld.name %}bg-neon-cyan text-void{% else %}bg-steel/50 text-mist hover:bg-steel hover:text-frost{% endif %}" data-tld="{{ tld.name }}">
+                            .{{ tld.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" id="tld-filter" name="tld" value="{{ selected_tld or '' }}">
+                </div>
+                
+                <!-- Search Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-mist mb-2">Search</label>
+                    <input type="text" id="search-filter" name="search" placeholder="Contains keyword..." 
+                        class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost placeholder-mist/50 focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                </div>
             </div>
             
-            <!-- TLD Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">TLD</label>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" class="tld-filter px-3 py-1 rounded-full text-sm border border-slate-300 hover:bg-slate-100 {% if not selected_tld %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}" data-tld="">
-                        All
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Length Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-mist mb-2">Length</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="min-length" name="min_length" placeholder="Min" min="1" 
+                            class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost placeholder-mist/50 focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                        <input type="number" id="max-length" name="max_length" placeholder="Max" min="1" 
+                            class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost placeholder-mist/50 focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                    </div>
+                </div>
+                
+                <!-- Charset Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-mist mb-2">Charset</label>
+                    <select id="charset-filter" name="charset_type" 
+                        class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                        <option value="">Any</option>
+                        <option value="letters">Letters only</option>
+                        <option value="numbers">Numbers only</option>
+                        <option value="mixed">Mixed</option>
+                    </select>
+                </div>
+                
+                <!-- Apply Button -->
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all duration-200">
+                        Apply Filters
                     </button>
-                    {% for tld in active_tlds %}
-                    <button type="button" class="tld-filter px-3 py-1 rounded-full text-sm border border-slate-300 hover:bg-slate-100 {% if selected_tld == tld.name %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}" data-tld="{{ tld.name }}">
-                        .{{ tld.name }}
-                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary -->
+    <div id="summary" class="mb-6 text-mist flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+        {% if selected_date %}
+        Showing <span id="result-count" class="text-frost font-semibold">{{ total_count }}</span> results for <span class="text-neon-cyan">{{ selected_date.strftime('%Y-%m-%d') }}</span>
+        {% if selected_tld %}<span class="text-mist/60">(TLD: .{{ selected_tld }})</span>{% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Results Table -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-steel/30">
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Domain</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Drop Date</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Length</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Charset</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Kalite</th>
+                        <th class="text-left py-4 px-6 text-mist font-medium text-sm uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body" class="divide-y divide-steel/20">
+                    {% for drop in initial_drops %}
+                    <tr class="hover:bg-steel/20 transition-colors duration-150 group">
+                        <td class="py-4 px-6">
+                            <span class="font-mono text-frost font-medium group-hover:text-neon-cyan transition-colors">{{ drop.domain }}</span>
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-neon-cyan/10 text-neon-cyan text-sm font-medium">.{{ drop.tld }}</span>
+                        </td>
+                        <td class="py-4 px-6 text-mist font-mono text-sm">{{ drop.drop_date.strftime('%Y-%m-%d') }}</td>
+                        <td class="py-4 px-6">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-steel/50 text-frost font-mono text-sm">{{ drop.length }}</span>
+                        </td>
+                        <td class="py-4 px-6">
+                            {% if drop.charset_type == 'letters' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-medium uppercase tracking-wide">
+                                {{ drop.charset_type }}
+                            </span>
+                            {% elif drop.charset_type == 'numbers' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium uppercase tracking-wide">
+                                {{ drop.charset_type }}
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 text-xs font-medium uppercase tracking-wide">
+                                {{ drop.charset_type }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="quality-score inline-flex items-center justify-center min-w-[48px] px-2 py-1 rounded-lg text-xs font-bold" 
+                                  data-domain="{{ drop.domain.split('.')[0] if '.' in drop.domain else drop.domain }}" 
+                                  data-tld="{{ drop.tld }}">
+                                <span class="loading-spinner w-4 h-4 border-2 border-mist/30 border-t-neon-cyan rounded-full animate-spin"></span>
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 flex gap-2">
+                            <a href="/domain/{{ drop.domain }}.{{ drop.tld }}" class="px-3 py-2 bg-neon-purple/20 hover:bg-neon-purple/30 text-neon-purple rounded-lg text-sm font-medium transition-all duration-200" title="Detay">
+                                🔍
+                            </a>
+                            <button class="copy-btn px-3 py-2 bg-steel/50 hover:bg-neon-cyan/20 text-mist hover:text-neon-cyan rounded-lg text-sm font-medium transition-all duration-200" data-domain="{{ drop.domain }}.{{ drop.tld }}" title="Kopyala">
+                                📋
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
-                </div>
-                <input type="hidden" id="tld-filter" name="tld" value="{{ selected_tld or '' }}">
-            </div>
-            
-            <!-- Search Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
-                <input type="text" id="search-filter" name="search" placeholder="Contains keyword..." 
-                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
-            </div>
-            
-            <!-- Length Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Length</label>
-                <div class="flex gap-2">
-                    <input type="number" id="min-length" name="min_length" placeholder="Min" min="1" 
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
-                    <input type="number" id="max-length" name="max_length" placeholder="Max" min="1" 
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
-                </div>
-            </div>
+                </tbody>
+            </table>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Charset Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Charset</label>
-                <select id="charset-filter" name="charset_type" 
-                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
-                    <option value="">Any</option>
-                    <option value="letters">Letters only</option>
-                    <option value="numbers">Numbers only</option>
-                    <option value="mixed">Mixed</option>
-                </select>
+        <!-- Pagination -->
+        <div id="pagination" class="p-6 border-t border-steel/30 flex justify-between items-center">
+            <div class="text-sm text-mist">
+                Page <span id="current-page" class="text-frost font-medium">1</span> of <span id="total-pages" class="text-frost font-medium">1</span>
             </div>
-            
-            <!-- Apply Button -->
-            <div class="flex items-end">
-                <button type="submit" class="w-full bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition">
-                    Apply Filters
+            <div class="flex gap-3">
+                <button id="prev-page" class="px-5 py-2.5 bg-steel/50 hover:bg-steel text-mist hover:text-frost rounded-xl font-medium transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+                    ← Previous
+                </button>
+                <button id="next-page" class="px-5 py-2.5 bg-steel/50 hover:bg-steel text-mist hover:text-frost rounded-xl font-medium transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed">
+                    Next →
                 </button>
             </div>
-        </div>
-    </form>
-</div>
-
-<!-- Summary -->
-<div id="summary" class="mb-4 text-slate-600">
-    {% if selected_date %}
-    Showing <span id="result-count">{{ total_count }}</span> results for {{ selected_date.strftime('%Y-%m-%d') }}
-    {% if selected_tld %}(TLD: .{{ selected_tld }}){% endif %}
-    {% endif %}
-</div>
-
-<!-- Results Table -->
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Domain</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">TLD</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Drop Date</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Length</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Charset</th>
-                    <th class="text-left py-3 px-4 text-slate-700 font-medium">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="results-body">
-                {% for drop in initial_drops %}
-                <tr class="border-b border-slate-100 hover:bg-slate-50">
-                    <td class="py-3 px-4 font-mono text-slate-900">{{ drop.domain }}</td>
-                    <td class="py-3 px-4 text-slate-600">.{{ drop.tld }}</td>
-                    <td class="py-3 px-4 text-slate-600">{{ drop.drop_date.strftime('%Y-%m-%d') }}</td>
-                    <td class="py-3 px-4 text-slate-600">{{ drop.length }}</td>
-                    <td class="py-3 px-4">
-                        <span class="px-2 py-1 rounded text-xs font-medium
-                            {% if drop.charset_type == 'letters' %}bg-blue-100 text-blue-800
-                            {% elif drop.charset_type == 'numbers' %}bg-green-100 text-green-800
-                            {% else %}bg-purple-100 text-purple-800{% endif %}">
-                            {{ drop.charset_type }}
-                        </span>
-                    </td>
-                    <td class="py-3 px-4">
-                        <button class="copy-btn px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm" data-domain="{{ drop.domain }}">
-                            Copy
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Pagination -->
-    <div id="pagination" class="p-4 border-t border-slate-200 flex justify-between items-center">
-        <div class="text-sm text-slate-600">
-            Page <span id="current-page">1</span> of <span id="total-pages">1</span>
-        </div>
-        <div class="flex gap-2">
-            <button id="prev-page" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                Previous
-            </button>
-            <button id="next-page" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                Next
-            </button>
         </div>
     </div>
 </div>
@@ -141,5 +172,85 @@
 
 {% block extra_scripts %}
 <script src="/static/js/app.js"></script>
-{% endblock %}
+<script>
+// Copy button functionality
+document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const domain = this.getAttribute('data-domain');
+        navigator.clipboard.writeText(domain).then(() => {
+            const toast = document.getElementById('toast');
+            const message = document.getElementById('toast-message');
+            message.textContent = `Copied: ${domain}`;
+            toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2000);
+        });
+    });
+});
 
+// TLD filter buttons
+document.querySelectorAll('.tld-filter').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('tld-filter').value = this.getAttribute('data-tld');
+        document.querySelectorAll('.tld-filter').forEach(b => {
+            b.classList.remove('bg-neon-cyan', 'text-void');
+            b.classList.add('bg-steel/50', 'text-mist');
+        });
+        this.classList.remove('bg-steel/50', 'text-mist');
+        this.classList.add('bg-neon-cyan', 'text-void');
+    });
+});
+
+// Quality Score loader
+async function loadQualityScores() {
+    const scoreElements = document.querySelectorAll('.quality-score');
+    
+    for (const el of scoreElements) {
+        const domain = el.dataset.domain;
+        const tld = el.dataset.tld;
+        
+        try {
+            const response = await fetch('/api/v1/quality/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain, tld })
+            });
+            
+            const data = await response.json();
+            
+            // Determine color based on score
+            let bgColor, textColor;
+            if (data.score >= 85) {
+                bgColor = 'bg-yellow-500/20';
+                textColor = 'text-yellow-400';
+            } else if (data.score >= 70) {
+                bgColor = 'bg-emerald-500/20';
+                textColor = 'text-emerald-400';
+            } else if (data.score >= 55) {
+                bgColor = 'bg-blue-500/20';
+                textColor = 'text-blue-400';
+            } else if (data.score >= 40) {
+                bgColor = 'bg-cyan-500/20';
+                textColor = 'text-cyan-400';
+            } else {
+                bgColor = 'bg-gray-500/20';
+                textColor = 'text-gray-400';
+            }
+            
+            el.className = `quality-score inline-flex items-center justify-center min-w-[48px] px-2 py-1 rounded-lg text-xs font-bold ${bgColor} ${textColor}`;
+            el.innerHTML = `${data.score}`;
+            el.title = `${data.tier} - Uzunluk: ${data.breakdown.length}, TLD: ${data.breakdown.tld}, Kelime: ${data.breakdown.word}`;
+            
+        } catch (error) {
+            el.innerHTML = '-';
+            el.className = 'quality-score inline-flex items-center justify-center min-w-[48px] px-2 py-1 rounded-lg text-xs font-bold bg-gray-500/20 text-gray-400';
+        }
+    }
+}
+
+// Load scores on page load
+document.addEventListener('DOMContentLoaded', loadQualityScores);
+</script>
+{% endblock %}
