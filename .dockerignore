@@ -41,8 +41,8 @@ Thumbs.db
 # Data (zone files - will be mounted as volume)
 data/zones/
 
-# Alembic versions (will be created in container)
-alembic/versions/*.py
+# Alembic versions - keep migration files, they are needed!
+# alembic/versions/*.py  # COMMENTED OUT - migration files must be included
 !alembic/versions/.gitkeep
 
 # Documentation
