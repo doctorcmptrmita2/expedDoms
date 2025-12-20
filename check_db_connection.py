@@ -30,8 +30,9 @@ if db_url != 'NOT SET':
         print("Attempting to connect...")
         
         from app.core.database import engine
+        from sqlalchemy import text
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             print("✓ Connection successful!")
             print(f"  Result: {result.fetchone()}")
             
