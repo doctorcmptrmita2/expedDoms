@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Payments - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-void">
+    <!-- Admin Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 bg-night border-r border-steel/50 z-40">
+        <div class="p-6 border-b border-steel/50">
+            <h1 class="text-2xl font-bold text-frost font-display">Admin Panel</h1>
+            <p class="text-sm text-mist mt-1">SaaS Management</p>
+        </div>
+        <nav class="p-4 space-y-2">
+            <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin/users" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <span>Users</span>
+            </a>
+            <a href="/admin/subscriptions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <span>Subscriptions</span>
+            </a>
+            <a href="/admin/plans" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>Plans</span>
+            </a>
+            <a href="/admin/payments" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="font-medium">Payments</span>
+            </a>
+            <a href="/admin/analytics" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>Analytics</span>
+            </a>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-frost font-display mb-2">Payment History</h1>
+            <p class="text-mist">View and manage payment transactions</p>
+        </div>
+        
+        <!-- Filters -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 mb-6">
+            <form method="get" class="flex gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-mist mb-2">Status</label>
+                    <select name="status_filter" class="px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan">
+                        <option value="">All</option>
+                        <option value="succeeded" {% if status_filter == "succeeded" %}selected{% endif %}>Succeeded</option>
+                        <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+                        <option value="failed" {% if status_filter == "failed" %}selected{% endif %}>Failed</option>
+                        <option value="refunded" {% if status_filter == "refunded" %}selected{% endif %}>Refunded</option>
+                    </select>
+                </div>
+                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all">
+                    Filter
+                </button>
+            </form>
+        </div>
+        
+        <!-- Payments Table -->
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-frost">Payments ({{ total }})</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-steel/30">
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">Date</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">User</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">Amount</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">Status</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">Description</th>
+                            <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase">Stripe ID</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-steel/20">
+                        {% for payment in payments %}
+                        <tr class="hover:bg-steel/20 transition-colors">
+                            <td class="py-4 px-4 text-mist text-sm">
+                                {{ payment.created_at.strftime('%Y-%m-%d %H:%M') if payment.created_at else 'N/A' }}
+                            </td>
+                            <td class="py-4 px-4">
+                                <div class="text-frost font-medium">{{ payment.user.email if payment.user else 'N/A' }}</div>
+                            </td>
+                            <td class="py-4 px-4">
+                                <div class="text-frost font-semibold">${{ "%.2f"|format(payment.amount) }}</div>
+                                <div class="text-xs text-mist">{{ payment.currency.upper() }}</div>
+                            </td>
+                            <td class="py-4 px-4">
+                                {% if payment.status == "succeeded" %}
+                                <span class="px-2 py-1 rounded-lg bg-neon-green/10 text-neon-green text-xs font-medium">Succeeded</span>
+                                {% elif payment.status == "pending" %}
+                                <span class="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-medium">Pending</span>
+                                {% elif payment.status == "failed" %}
+                                <span class="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium">Failed</span>
+                                {% elif payment.status == "refunded" %}
+                                <span class="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-medium">Refunded</span>
+                                {% else %}
+                                <span class="px-2 py-1 rounded-lg bg-mist/10 text-mist text-xs font-medium">{{ payment.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-4 text-mist text-sm">
+                                {{ payment.description or 'N/A' }}
+                            </td>
+                            <td class="py-4 px-4">
+                                {% if payment.stripe_payment_intent_id %}
+                                <div class="text-xs text-mist font-mono">{{ payment.stripe_payment_intent_id[:20] }}...</div>
+                                {% else %}
+                                <span class="text-mist text-xs">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <div class="mt-6 flex items-center justify-between">
+                <div class="text-sm text-mist">Page {{ page }} of {{ total_pages }}</div>
+                <div class="flex gap-2">
+                    {% if page > 1 %}
+                    <a href="?page={{ page - 1 }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}" 
+                       class="px-4 py-2 bg-steel/50 hover:bg-steel text-frost rounded-xl transition-colors">Previous</a>
+                    {% endif %}
+                    {% if page < total_pages %}
+                    <a href="?page={{ page + 1 }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}" 
+                       class="px-4 py-2 bg-steel/50 hover:bg-steel text-frost rounded-xl transition-colors">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

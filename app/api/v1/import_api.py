@@ -1,13 +1,13 @@
 """
 API endpoint for importing all domains from zone files.
-Enhanced with logging, throttling and better error handling.
+Enhanced with logging, throttling, chunk-based processing and progress tracking.
 """
 import time
 import gc
 from datetime import date
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -15,15 +15,17 @@ from app.core.database import get_db
 from app.core.config import get_settings
 from app.models.tld import Tld
 from app.models.drop import DroppedDomain
-from app.services.zone_parser import extract_slds_from_zone, build_domain_name
+from app.services.zone_parser import extract_slds_from_zone, extract_slds_from_zone_chunked, build_domain_name
 from app.services.import_logger import ImportLogger, logger
+from app.services.progress_tracker import ProgressTracker
 
 router = APIRouter()
 
 # Configuration
 BATCH_SIZE = 500  # Smaller batches for stability
+CHUNK_SIZE = 10000  # SLDs per chunk for parsing
 THROTTLE_EVERY = 5000  # Pause every N records
-THROTTLE_SECONDS = 1  # Pause duration
+THROTTLE_SECONDS = 0.1  # Pause duration (reduced for chunk processing)
 MAX_RETRIES = 3  # Max retries for DB operations
 
 
@@ -198,13 +200,16 @@ async def import_all_zones(db: Session = Depends(get_db)) -> Dict:
 async def import_single_zone(
     tld: str = Query(..., description="Top-level domain name"),
     zone_date: str = Query(None, description="Date in YYYY-MM-DD format (optional, will use latest if not provided)"),
+    use_chunks: bool = Query(True, description="Use chunk-based processing for large files"),
+    job_id: Optional[str] = Query(None, description="Optional job ID for progress tracking"),
     db: Session = Depends(get_db)
 ) -> Dict:
     """
     Import domains from a single zone file into database.
-    Enhanced with logging, throttling and better error handling.
+    Enhanced with logging, throttling, chunk-based processing and progress tracking.
     """
     import_log = ImportLogger(tld.lower(), "single_zone_import")
+    progress = ProgressTracker(job_id)
     
     try:
         settings = get_settings()
@@ -269,15 +274,7 @@ async def import_single_zone(
             db.refresh(tld_obj)
             import_log.log_info(f"Created new TLD record: {tld.lower()}")
         
-        # Parse zone file
-        import_log.log_info(f"Parsing zone file...")
-        parse_start = time.time()
-        slds = extract_slds_from_zone(zone_file, tld.lower())
-        parse_duration = time.time() - parse_start
-        import_log.log_info(f"Parsed {len(slds)} SLDs in {parse_duration:.1f}s")
-        import_log.start(len(slds))
-        
-        # Get existing domains
+        # Get existing domains first (for duplicate checking)
         import_log.log_info(f"Checking existing domains...")
         existing_domains = set()
         existing_query = db.query(DroppedDomain.domain).filter(
@@ -287,6 +284,51 @@ async def import_single_zone(
         for (domain,) in existing_query:
             existing_domains.add(domain)
         import_log.log_info(f"Found {len(existing_domains)} existing domains for this date")
+        
+        # Parse zone file (chunk-based or full)
+        import_log.log_info(f"Parsing zone file (chunked={use_chunks})...")
+        parse_start = time.time()
+        
+        if use_chunks:
+            # Chunk-based processing for large files
+            all_slds = set()
+            chunk_count = 0
+            total_lines = 0
+            
+            for chunk_slds in extract_slds_from_zone_chunked(
+                zone_file, 
+                tld.lower(), 
+                chunk_size=CHUNK_SIZE,
+                pause_every=THROTTLE_EVERY,
+                pause_seconds=THROTTLE_SECONDS
+            ):
+                all_slds.update(chunk_slds)
+                chunk_count += 1
+                total_lines += len(chunk_slds)
+                
+                # Update progress during parsing
+                progress.update(
+                    current=total_lines,
+                    total=0,  # We don't know total yet
+                    message=f"Parsing... Found {total_lines} SLDs so far"
+                )
+                
+                # Small pause between chunks
+                if chunk_count % 10 == 0:
+                    time.sleep(THROTTLE_SECONDS)
+                    gc.collect()
+            
+            slds = all_slds
+            parse_duration = time.time() - parse_start
+            import_log.log_info(f"Parsed {len(slds)} SLDs in {parse_duration:.1f}s ({chunk_count} chunks)")
+        else:
+            # Full parsing for smaller files
+            slds = extract_slds_from_zone(zone_file, tld.lower())
+            parse_duration = time.time() - parse_start
+            import_log.log_info(f"Parsed {len(slds)} SLDs in {parse_duration:.1f}s")
+        
+        import_log.start(len(slds))
+        progress.update(current=0, total=len(slds), message=f"Starting import of {len(slds)} SLDs...")
         
         # Prepare batch insert with throttling
         imported = 0
@@ -303,6 +345,7 @@ async def import_single_zone(
             
             if domain in existing_domains:
                 skipped += 1
+                total_processed += 1
                 continue
             
             batch.append({
@@ -323,6 +366,14 @@ async def import_single_zone(
                 batch = []
                 total_processed += BATCH_SIZE
                 
+                # Update progress
+                progress.update(
+                    current=total_processed,
+                    total=len(slds_list),
+                    message=f"Imported: {imported}, Skipped: {skipped}, Errors: {errors}",
+                    details={"imported": imported, "skipped": skipped, "errors": errors}
+                )
+                
                 # Throttling - pause every N records
                 if total_processed % THROTTLE_EVERY == 0:
                     import_log.log_info(f"Progress: {total_processed}/{len(slds_list)} ({(total_processed/len(slds_list)*100):.1f}%) - Imported: {imported}, Errors: {errors}")
@@ -336,6 +387,7 @@ async def import_single_zone(
             success, err = _batch_insert_with_retry(db, batch, import_log)
             imported += success
             errors += err
+            total_processed += len(batch)
         
         # Update TLD metadata
         tld_obj.last_import_date = file_date
@@ -350,8 +402,22 @@ async def import_single_zone(
         import_log.set_stat("file_date", file_date.isoformat())
         summary = import_log.complete(errors == 0 or imported > 0)
         
+        # Update progress tracker
+        progress.complete(
+            success=errors == 0 or imported > 0,
+            message=f"Completed: {imported} imported, {skipped} skipped, {errors} errors",
+            details={
+                "imported": imported,
+                "skipped": skipped,
+                "errors": errors,
+                "sld_count": len(slds),
+                "zone_file": zone_file.name
+            }
+        )
+        
         return {
             "success": True,
+            "job_id": progress.job_id,
             "tld": tld.lower(),
             "zone_file": zone_file.name,
             "date": file_date.isoformat(),
@@ -365,10 +431,12 @@ async def import_single_zone(
         
     except HTTPException:
         import_log.complete(False)
+        progress.complete(success=False, message="Import failed")
         raise
     except Exception as e:
         import_log.log_error(f"Import failed", e)
         import_log.complete(False)
+        progress.complete(success=False, message=f"Import failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 
@@ -384,4 +452,34 @@ async def get_import_logs(
         "success": True,
         "count": len(logs),
         "logs": logs
+    }
+
+
+@router.get("/import/progress/{job_id}")
+async def get_import_progress(job_id: str) -> Dict:
+    """
+    Get progress status for an import job.
+    
+    Args:
+        job_id: Job ID returned from import_single_zone endpoint
+        
+    Returns:
+        Progress status with current, total, percentage, and message
+    """
+    status = ProgressTracker.get_job_status(job_id)
+    
+    if not status:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+    
+    return {
+        "success": True,
+        "job_id": job_id,
+        "status": status.get("status"),
+        "progress": status.get("progress", 0),
+        "current": status.get("current", 0),
+        "total": status.get("total", 0),
+        "message": status.get("message", ""),
+        "details": status.get("details", {}),
+        "start_time": status.get("start_time"),
+        "updated_at": status.get("updated_at")
     }

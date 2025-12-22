@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Resend Verification Email - ExpiredDomain.dev{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-6 py-12">
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-frost mb-2">Email Doğrulama</h1>
+            <p class="text-mist">Doğrulama emaili gönder</p>
+        </div>
+
+        {% if success %}
+        <!-- Success Message -->
+        <div class="mb-6 p-4 rounded-xl bg-neon-green/10 border border-neon-green/30">
+            <div class="flex items-center gap-3">
+                <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <p class="text-neon-green font-medium">{{ message }}</p>
+            </div>
+        </div>
+        <div class="text-center">
+            <a href="/dashboard" class="text-neon-cyan hover:text-neon-purple transition-colors">
+                Dashboard'a dön →
+            </a>
+        </div>
+        {% else %}
+        <!-- Form -->
+        <div class="mb-6 p-4 rounded-xl bg-steel/30">
+            <p class="text-sm text-mist mb-2">Email adresiniz:</p>
+            <p class="text-frost font-mono">{{ user.email }}</p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {% if error %}
+            <div class="p-4 rounded-xl bg-neon-pink/10 border border-neon-pink/30">
+                <p class="text-neon-pink text-sm">{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <button 
+                type="submit"
+                class="w-full px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-opacity"
+            >
+                Doğrulama Emaili Gönder
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="/dashboard" class="text-sm text-mist hover:text-neon-cyan transition-colors">
+                Dashboard'a dön
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

@@ -230,3 +230,5 @@ python3 -m py_compile /app/app/web/debug.py && echo "‚úÖ Syntax OK!" || echo "‚ù
 
 
 
+
+

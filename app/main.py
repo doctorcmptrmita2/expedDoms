@@ -17,8 +17,8 @@ try:
 except Exception:
     app_title = "ExpiredDomain.dev"
 
-from app.api.v1 import tlds, drops, czds, process, import_api, auth, users, quality, notifications, history, stats, cron
-from app.web import routes, admin, domains, debug, auth_web, stats_web, cron_web
+from app.api.v1 import tlds, drops, czds, process, import_api, auth, users, quality, notifications, history, stats, cron, subscriptions, favorites, watchlists, api_keys, export
+from app.web import routes, admin, domains, debug, auth_web, stats_web, cron_web, admin_dashboard, subscription_web, favorites_web, watchlist_web, deleted_domains, droptoday
 
 logger = logging.getLogger(__name__)
 
@@ -100,15 +100,30 @@ app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["
 app.include_router(history.router, prefix="/api/v1/history", tags=["Domain History"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["Statistics"])
 app.include_router(cron.router, prefix="/api/v1", tags=["Cron Jobs"])
+app.include_router(subscriptions.router, prefix="/api/v1", tags=["Subscriptions"])
+app.include_router(favorites.router, prefix="/api/v1", tags=["Favorites"])
+app.include_router(watchlists.router, prefix="/api/v1", tags=["Watchlists"])
+app.include_router(api_keys.router, prefix="/api/v1", tags=["API Keys"])
+app.include_router(export.router, prefix="/api/v1", tags=["Export"])
+
+# Stripe webhook (no prefix, direct path)
+from app.api.v1 import stripe_webhook
+app.include_router(stripe_webhook.router, tags=["Stripe"])
 
 # Include web routes
 app.include_router(routes.router, tags=["Web"])
 app.include_router(admin.router, tags=["Admin"])
+app.include_router(admin_dashboard.router, tags=["Admin Dashboard"])
 app.include_router(domains.router, tags=["Domains"])
 app.include_router(debug.router, tags=["Debug"])
 app.include_router(auth_web.router, tags=["Auth Web"])
 app.include_router(stats_web.router, tags=["Stats Web"])
 app.include_router(cron_web.router, tags=["Cron Web"])
+app.include_router(subscription_web.router, tags=["Subscription Web"])
+app.include_router(favorites_web.router, tags=["Favorites Web"])
+app.include_router(watchlist_web.router, tags=["Watchlist Web"])
+app.include_router(deleted_domains.router, tags=["Deleted Domains"])
+app.include_router(droptoday.router, tags=["Drop Today"])
 
 
 @app.get("/health")

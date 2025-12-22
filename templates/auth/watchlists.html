@@ -9,13 +9,13 @@
     <div class="flex items-center justify-between mb-8">
         <div>
             <h1 class="text-3xl font-bold text-frost mb-2">Watchlist'lerim</h1>
-            <p class="text-mist">Domain izleme listelerinizi yönetin ({{ watchlists|length }}/{{ max_watchlists }})</p>
+            <p class="text-mist">Domain izleme listelerinizi yönetin ({{ current_usage }}/{{ max_allowed if max_allowed > 0 else '∞' }})</p>
         </div>
         <div class="flex items-center gap-3">
             <a href="/dashboard" class="px-4 py-2 rounded-lg bg-steel/50 hover:bg-steel text-frost font-medium transition-colors">
                 ← Dashboard
             </a>
-            {% if watchlists|length < max_watchlists %}
+            {% if is_within_limit %}
             <button 
                 onclick="showCreateModal()"
                 class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold hover:opacity-90 transition-opacity"
@@ -390,6 +390,8 @@ document.getElementById('watchlistForm').addEventListener('submit', async functi
 </script>
 {% endblock %}
 {% endblock %}
+
+
 
 
 

@@ -516,11 +516,120 @@ async function parseZone(tld, zoneFile, zoneDate) {
     button.className = 'px-3 py-1.5 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-lg cursor-not-allowed';
     
     statusDiv.className = 'bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 mb-6';
-    statusDiv.innerHTML = `<div class="flex items-center"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400 mr-3"></div><span class="text-blue-300">Parsing <strong class="text-blue-400">${tld}/${zoneFile}</strong> and importing to database... This may take several minutes.</span></div>`;
+    statusDiv.innerHTML = `<div class="flex items-center"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400 mr-3"></div><span class="text-blue-300">Starting parse for <strong class="text-blue-400">${tld}/${zoneFile}</strong>...</span></div>`;
     statusDiv.classList.remove('hidden');
     
+    let jobId = null;
+    let progressInterval = null;
+    
+    // Helper function to safely parse JSON
+    async function safeJsonParse(response) {
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+            throw new Error('Empty response from server');
+        }
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            console.error('Response text:', text.substring(0, 200));
+            throw new Error(`Invalid JSON response: ${e.message}. Response: ${text.substring(0, 100)}...`);
+        }
+    }
+    
+    // Progress polling function
+    async function pollProgress(jobId) {
+        try {
+            const response = await fetch(`/api/v1/import/progress/${jobId}`);
+            if (!response.ok) {
+                return null;
+            }
+            const progress = await safeJsonParse(response);
+            return progress;
+        } catch (error) {
+            console.error('Progress poll error:', error);
+            return null;
+        }
+    }
+    
+    // Update UI with progress
+    function updateProgressUI(progress) {
+        if (!progress || !progress.success) return;
+        
+        const status = progress.status;
+        const current = progress.current || 0;
+        const total = progress.total || 0;
+        const progressPct = progress.progress || 0;
+        const message = progress.message || 'Processing...';
+        
+        let statusClass = 'bg-blue-500/10 border border-blue-500/30';
+        let statusIcon = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400 mr-3"></div>';
+        
+        if (status === 'completed') {
+            statusClass = 'bg-neon-green/10 border border-neon-green/30';
+            statusIcon = '<div class="text-neon-green text-xl mr-3">✅</div>';
+        } else if (status === 'failed') {
+            statusClass = 'bg-red-500/10 border border-red-500/30';
+            statusIcon = '<div class="text-red-400 text-xl mr-3">❌</div>';
+        }
+        
+        let html = `<div class="flex items-center">${statusIcon}`;
+        html += `<div class="flex-1">`;
+        html += `<div class="text-blue-300 mb-2"><strong>${message}</strong></div>`;
+        
+        if (total > 0) {
+            html += `<div class="w-full bg-gray-700 rounded-full h-2.5 mb-2">`;
+            html += `<div class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>`;
+            html += `</div>`;
+            html += `<div class="text-sm text-mist">Progress: ${current.toLocaleString()} / ${total.toLocaleString()} (${progressPct}%)</div>`;
+        } else {
+            html += `<div class="text-sm text-mist">${message}</div>`;
+        }
+        
+        if (progress.details) {
+            const details = progress.details;
+            if (details.imported !== undefined || details.skipped !== undefined) {
+                html += `<div class="mt-2 text-xs text-mist">`;
+                if (details.imported !== undefined) html += `Imported: <strong class="text-neon-green">${details.imported.toLocaleString()}</strong> `;
+                if (details.skipped !== undefined) html += `Skipped: <strong class="text-mist">${details.skipped.toLocaleString()}</strong> `;
+                if (details.errors !== undefined && details.errors > 0) html += `Errors: <strong class="text-red-400">${details.errors.toLocaleString()}</strong>`;
+                html += `</div>`;
+            }
+        }
+        
+        html += `</div></div>`;
+        
+        statusDiv.className = statusClass + ' rounded-2xl p-6 mb-6';
+        statusDiv.innerHTML = html;
+        
+        // Stop polling if completed or failed
+        if (status === 'completed' || status === 'failed') {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            if (status === 'completed') {
+                button.textContent = '✓ Parsed';
+                button.className = 'px-3 py-1.5 bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg cursor-default';
+                button.disabled = true;
+                
+                // Notify other tabs/windows
+                localStorage.setItem('debug_last_update', Date.now().toString());
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            } else {
+                button.disabled = false;
+                button.textContent = originalText;
+                button.className = 'px-3 py-1.5 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg transition-colors';
+            }
+        }
+    }
+    
     try {
-        const url = `/api/v1/import/single-zone?tld=${encodeURIComponent(tld)}&zone_date=${encodeURIComponent(zoneDate)}`;
+        const url = `/api/v1/import/single-zone?tld=${encodeURIComponent(tld)}&zone_date=${encodeURIComponent(zoneDate)}&use_chunks=true`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -531,20 +640,37 @@ async function parseZone(tld, zoneFile, zoneDate) {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Parse failed');
+            const errorData = await safeJsonParse(response);
+            throw new Error(errorData.detail || `HTTP ${response.status}: Parse failed`);
         }
         
-        const data = await response.json();
+        const data = await safeJsonParse(response);
         
-        if (data.success) {
+        if (data.success && data.job_id) {
+            jobId = data.job_id;
+            
+            // Start polling for progress
+            progressInterval = setInterval(async () => {
+                const progress = await pollProgress(jobId);
+                if (progress) {
+                    updateProgressUI(progress);
+                }
+            }, 2000); // Poll every 2 seconds
+            
+            // Initial progress update
+            const initialProgress = await pollProgress(jobId);
+            if (initialProgress) {
+                updateProgressUI(initialProgress);
+            }
+        } else if (data.success) {
+            // Fallback for non-chunked responses
             statusDiv.className = 'bg-neon-green/10 border border-neon-green/30 rounded-2xl p-6 mb-6';
             let html = `<div class="text-neon-green"><strong>✅ Parse & Import Complete!</strong></div>`;
             html += `<div class="mt-3 space-y-1 text-sm text-mist">`;
             html += `<p>Zone file: <strong class="text-frost">${tld}/${zoneFile}</strong></p>`;
-            html += `<p>SLDs found: <strong class="text-neon-cyan">${data.sld_count.toLocaleString()}</strong></p>`;
-            html += `<p>Imported to DB: <strong class="text-neon-green">${data.imported.toLocaleString()}</strong> domains</p>`;
-            html += `<p>Skipped: <strong class="text-mist">${data.skipped.toLocaleString()}</strong></p>`;
+            if (data.sld_count !== undefined) html += `<p>SLDs found: <strong class="text-neon-cyan">${data.sld_count.toLocaleString()}</strong></p>`;
+            if (data.imported !== undefined) html += `<p>Imported to DB: <strong class="text-neon-green">${data.imported.toLocaleString()}</strong> domains</p>`;
+            if (data.skipped !== undefined) html += `<p>Skipped: <strong class="text-mist">${data.skipped.toLocaleString()}</strong></p>`;
             html += `</div>`;
             statusDiv.innerHTML = html;
             
@@ -552,9 +678,7 @@ async function parseZone(tld, zoneFile, zoneDate) {
             button.className = 'px-3 py-1.5 bg-neon-green/20 text-neon-green text-xs font-semibold rounded-lg cursor-default';
             button.disabled = true;
             
-            // Notify other tabs/windows about the update
             localStorage.setItem('debug_last_update', Date.now().toString());
-            
             setTimeout(() => {
                 window.location.reload();
             }, 3000);
@@ -562,6 +686,10 @@ async function parseZone(tld, zoneFile, zoneDate) {
             throw new Error('Parse failed');
         }
     } catch (error) {
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+        
         statusDiv.className = 'bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6';
         statusDiv.innerHTML = `<div class="text-red-400"><strong>❌ Error parsing ${tld}/${zoneFile}:</strong> ${error.message}</div>`;
         

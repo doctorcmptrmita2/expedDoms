@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Today's Dropping Domains - ExpiredDomain.dev{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-10">
+        <h1 class="text-4xl font-bold text-frost mb-2">Today's Dropping Domains</h1>
+        {% if is_today %}
+        <p class="text-mist">Domains dropping on {{ today.isoformat() }}</p>
+        {% else %}
+        <div class="flex items-center gap-3">
+            <p class="text-mist">No domains dropping today ({{ today.isoformat() }})</p>
+            <span class="text-mist/60">•</span>
+            <p class="text-mist">Showing latest available: <span class="text-neon-cyan font-semibold">{{ show_date.isoformat() }}</span></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-cyan/50 transition-all duration-300 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative">
+                <div class="text-sm text-mist mb-2">Total Dropping Today</div>
+                <div class="text-3xl font-bold text-frost font-mono">{{ total_dropped | default(0) }}</div>
+                <div class="text-sm text-mist/60 mt-1">domains</div>
+            </div>
+        </div>
+        
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-purple/50 transition-all duration-300 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-neon-purple/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative">
+                <div class="text-sm text-mist mb-2">Showing Date</div>
+                <div class="text-2xl font-bold text-frost font-mono">{{ show_date.isoformat() }}</div>
+                <div class="text-sm text-mist/60 mt-1">{% if is_today %}today{% else %}latest available{% endif %}</div>
+            </div>
+        </div>
+        
+        <div class="group relative p-6 rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 hover:border-neon-pink/50 transition-all duration-300 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-neon-pink/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative">
+                <div class="text-sm text-mist mb-2">Total Tracked TLDs</div>
+                <div class="text-3xl font-bold text-frost font-mono">{{ active_tlds | length }}</div>
+                <div class="text-sm text-mist/60 mt-1">TLDs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 mb-6">
+        <form id="filter-form" method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">TLD</label>
+                <select name="tld" class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                    <option value="">All TLDs</option>
+                    {% for tld_option in active_tlds %}
+                    <option value="{{ tld_option.name }}" {% if selected_tld == tld_option.name %}selected{% endif %}>{{ tld_option.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">Search Domain</label>
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search..."
+                       class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">Min Length</label>
+                <input type="number" name="min_length" value="{{ min_length or '' }}" min="1" placeholder="Min"
+                       class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">Max Length</label>
+                <input type="number" name="max_length" value="{{ max_length or '' }}" min="1" placeholder="Max"
+                       class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">Charset Type</label>
+                <select name="charset_type" class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                    <option value="">All Types</option>
+                    <option value="letters" {% if charset_type == 'letters' %}selected{% endif %}>Letters</option>
+                    <option value="numbers" {% if charset_type == 'numbers' %}selected{% endif %}>Numbers</option>
+                    <option value="mixed" {% if charset_type == 'mixed' %}selected{% endif %}>Mixed</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-mist mb-2">Per Page</label>
+                <select name="page_size" class="w-full px-4 py-3 bg-void border border-steel rounded-xl text-frost focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all">
+                    {% for size in valid_page_sizes %}
+                    <option value="{{ size }}" {% if page_size == size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        
+        <div class="mt-4 flex gap-3">
+            <button type="submit" form="filter-form" class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all duration-200">
+                Apply Filters
+            </button>
+            <a href="/droptoday" class="px-6 py-3 bg-steel/50 text-mist font-semibold rounded-xl hover:bg-steel hover:text-frost transition-all duration-200">
+                Clear Filters
+            </a>
+        </div>
+    </div>
+
+    <!-- Domains List -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 mb-6 overflow-hidden">
+        <h2 class="text-2xl font-bold text-frost mb-6 flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span>
+            {% if is_today %}
+            Dropping Today ({{ show_date.isoformat() }})
+            {% else %}
+            Latest Dropped Domains ({{ show_date.isoformat() }})
+            {% endif %}
+        </h2>
+        
+        {% if dropped_domains %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-steel/30">
+                        <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Domain</th>
+                        <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">TLD</th>
+                        <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Length</th>
+                        <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Charset</th>
+                        <th class="text-left py-4 px-4 text-mist font-medium text-sm uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-steel/20">
+                    {% for domain in dropped_domains %}
+                    <tr class="hover:bg-steel/20 transition-colors duration-150 group">
+                        <td class="py-4 px-4 font-mono text-frost group-hover:text-neon-cyan transition-colors">{{ domain.domain }}</td>
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-neon-cyan/10 text-neon-cyan text-sm font-medium">.{{ domain.tld }}</span>
+                        </td>
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-steel/50 text-frost font-mono text-sm">{{ domain.length }}</span>
+                        </td>
+                        <td class="py-4 px-4">
+                            <span class="px-2.5 py-1 text-xs rounded-lg bg-steel/50 text-mist font-medium">
+                                {{ domain.charset_type }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4">
+                            <button onclick="copyToClipboard('{{ domain.domain }}')" 
+                                    class="px-4 py-2 bg-steel/50 hover:bg-neon-cyan/20 text-mist hover:text-neon-cyan rounded-lg text-sm font-medium transition-all duration-200">
+                                Copy
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-mist">
+                Showing <span class="text-frost font-semibold">{{ ((page - 1) * page_size) + 1 }}</span> - 
+                <span class="text-frost font-semibold">{{ [page * page_size, total_dropped] | min }}</span> 
+                of <span class="text-frost font-semibold">{{ total_dropped }}</span> domains
+            </div>
+            
+            {% if total_pages > 1 %}
+            <nav class="flex items-center gap-1">
+                <!-- Previous -->
+                {% if page > 1 %}
+                <a href="?page={{ page - 1 }}&page_size={{ page_size }}{% if selected_tld %}&tld={{ selected_tld }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if min_length %}&min_length={{ min_length }}{% endif %}{% if max_length %}&max_length={{ max_length }}{% endif %}{% if charset_type %}&charset_type={{ charset_type }}{% endif %}"
+                   class="px-3 py-2 rounded-lg bg-steel/50 text-mist hover:bg-steel hover:text-frost transition-colors">
+                    ← Previous
+                </a>
+                {% else %}
+                <span class="px-3 py-2 rounded-lg bg-steel/30 text-mist/50 cursor-not-allowed">← Previous</span>
+                {% endif %}
+                
+                <!-- Page numbers -->
+                {% for p in page_range %}
+                    {% if p == '...' %}
+                        <span class="px-2 text-mist">...</span>
+                    {% elif p == page %}
+                        <span class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold">{{ p }}</span>
+                    {% else %}
+                        <a href="?page={{ p }}&page_size={{ page_size }}{% if selected_tld %}&tld={{ selected_tld }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if min_length %}&min_length={{ min_length }}{% endif %}{% if max_length %}&max_length={{ max_length }}{% endif %}{% if charset_type %}&charset_type={{ charset_type }}{% endif %}"
+                           class="px-4 py-2 rounded-lg bg-steel/50 text-mist hover:bg-steel hover:text-frost transition-colors">
+                            {{ p }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Next -->
+                {% if page < total_pages %}
+                <a href="?page={{ page + 1 }}&page_size={{ page_size }}{% if selected_tld %}&tld={{ selected_tld }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if min_length %}&min_length={{ min_length }}{% endif %}{% if max_length %}&max_length={{ max_length }}{% endif %}{% if charset_type %}&charset_type={{ charset_type }}{% endif %}"
+                   class="px-3 py-2 rounded-lg bg-steel/50 text-mist hover:bg-steel hover:text-frost transition-colors">
+                    Next →
+                </a>
+                {% else %}
+                <span class="px-3 py-2 rounded-lg bg-steel/30 text-mist/50 cursor-not-allowed">Next →</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-steel/30 flex items-center justify-center">
+                <svg class="w-8 h-8 text-mist/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+            </div>
+            <p class="text-mist text-lg mb-2">No domains found</p>
+            <p class="text-mist/60 text-sm">
+                {% if is_today %}
+                There are no domains scheduled to drop on {{ today.isoformat() }}.
+                {% else %}
+                No domains found for {{ show_date.isoformat() }}.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-neon-cyan text-void px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+        toast.textContent = `Copied: ${text}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+</script>
+{% endblock %}
+

@@ -68,7 +68,7 @@ def _determine_charset_type(sld: str) -> str:
 
 def persist_drops(db: Session, tld: Tld, drop_date: date, slds: Set[str]) -> int:
     """
-    Persist dropped domains to database.
+    Persist dropped domains to database and trigger watchlist matching.
     
     Args:
         db: Database session
@@ -80,6 +80,7 @@ def persist_drops(db: Session, tld: Tld, drop_date: date, slds: Set[str]) -> int
         Number of domains successfully persisted
     """
     persisted_count = 0
+    persisted_domains = []  # Collect persisted domains for watchlist matching
     
     for sld in sorted(slds):
         domain = build_domain_name(sld, tld.name)
@@ -102,7 +103,9 @@ def persist_drops(db: Session, tld: Tld, drop_date: date, slds: Set[str]) -> int
         try:
             db.add(dropped_domain)
             db.commit()
+            db.refresh(dropped_domain)  # Refresh to get ID
             persisted_count += 1
+            persisted_domains.append(dropped_domain)
         except IntegrityError:
             # Domain already exists for this date, skip
             db.rollback()
@@ -112,6 +115,20 @@ def persist_drops(db: Session, tld: Tld, drop_date: date, slds: Set[str]) -> int
     tld.last_import_date = drop_date
     tld.last_drop_count = persisted_count
     db.commit()
+    
+    # Trigger watchlist matching for persisted domains
+    if persisted_domains:
+        try:
+            from app.services.watchlist_matcher import WatchlistMatcher
+            matcher = WatchlistMatcher(db)
+            match_result = matcher.match_dropped_domains(persisted_domains)
+            if match_result["total_matches"] > 0:
+                logger = __import__('logging').getLogger(__name__)
+                logger.info(f"Watchlist matching: {match_result['total_matches']} matches found for {len(persisted_domains)} dropped domains")
+        except Exception as e:
+            # Log error but don't fail drop detection
+            logger = __import__('logging').getLogger(__name__)
+            logger.warning(f"Watchlist matching error: {e}")
     
     return persisted_count
 

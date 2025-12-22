@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Success{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-12">
+    <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-neon-green/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-frost mb-4">Subscription Activated!</h1>
+        <p class="text-mist mb-8">Your subscription has been successfully activated.</p>
+        
+        {% if subscription %}
+        <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 mb-6">
+            <div class="text-left">
+                <div class="mb-4">
+                    <div class="text-sm text-mist mb-1">Current Plan</div>
+                    <div class="text-2xl font-bold text-frost">{{ subscription.plan.display_name if subscription.plan else 'Free' }}</div>
+                </div>
+                <div class="mb-4">
+                    <div class="text-sm text-mist mb-1">Billing Cycle</div>
+                    <div class="text-frost">{{ subscription.billing_cycle|title }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-mist mb-1">Next Billing Date</div>
+                    <div class="text-frost">{{ subscription.current_period_end.strftime('%Y-%m-%d') if subscription.current_period_end else 'N/A' }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="flex gap-4 justify-center">
+            <a href="/dashboard" class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all">
+                Go to Dashboard
+            </a>
+            <a href="/subscription/manage" class="px-6 py-3 bg-steel/50 hover:bg-steel text-frost font-semibold rounded-xl transition-all">
+                Manage Subscription
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

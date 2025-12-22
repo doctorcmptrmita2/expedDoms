@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Request, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, and_
+from sqlalchemy import func, desc, and_, case
 
 from app.core.database import get_db
 from app.models.tld import Tld
@@ -25,16 +25,16 @@ def domains_list(
     tld: Optional[str] = Query(None),
     future_days: int = Query(7, ge=1, le=30, description="Days to look ahead for future drops"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(50, description="Items per page (30, 50, or 100)"),
+    page_size: int = Query(100, description="Items per page (30, 50, 100, 200, or 500)"),
     db: Session = Depends(get_db)
 ):
     """
     Comprehensive domain listing page with pagination.
     """
     # Validate page_size
-    valid_page_sizes = [30, 50, 100]
+    valid_page_sizes = [30, 50, 100, 200, 500]
     if page_size not in valid_page_sizes:
-        page_size = 50
+        page_size = 100
     
     # Initialize default values
     active_tlds = []
@@ -45,6 +45,7 @@ def domains_list(
     total_dropped = 0
     total_future = 0
     total_pages = 1
+    page_range = []
     
     try:
         # Get all active TLDs for filter
@@ -77,9 +78,12 @@ def domains_list(
         offset = (page - 1) * page_size
         
         # Order and paginate
+        # Order by drop_date (newest first), then by quality_score (highest first), then by domain name
+        # MySQL doesn't support NULLS LAST, so we use CASE to put NULLs at the end
         dropped_domains_list = query_dropped.order_by(
             desc(DroppedDomain.drop_date),
-            desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
+            case((DroppedDomain.quality_score.is_(None), 1), else_=0),  # NULL values last
+            desc(DroppedDomain.quality_score),
             DroppedDomain.domain
         ).offset(offset).limit(page_size).all()
         
@@ -111,7 +115,8 @@ def domains_list(
             
             future_domains_list = query_future.order_by(
                 DroppedDomain.drop_date,
-                desc(DroppedDomain.quality_score) if DroppedDomain.quality_score else desc(DroppedDomain.id),
+                case((DroppedDomain.quality_score.is_(None), 1), else_=0),  # NULL values last
+                desc(DroppedDomain.quality_score),
                 DroppedDomain.domain
             ).limit(100).all()
             
@@ -132,21 +137,23 @@ def domains_list(
             future_domains = []
             total_future = 0
         
+        # Calculate page range for pagination
+        if total_pages <= 7:
+            page_range = list(range(1, total_pages + 1))
+        else:
+            if page <= 4:
+                page_range = list(range(1, 6)) + ['...', total_pages]
+            elif page >= total_pages - 3:
+                page_range = [1, '...'] + list(range(total_pages - 4, total_pages + 1))
+            else:
+                page_range = [1, '...'] + list(range(page - 1, page + 2)) + ['...', total_pages]
+        
     except Exception as e:
         import logging
         logging.error(f"Database error in domains_list route: {e}")
-    
-    # Calculate page range for pagination
-    page_range = []
-    if total_pages <= 7:
-        page_range = list(range(1, total_pages + 1))
-    else:
-        if page <= 4:
-            page_range = list(range(1, 6)) + ['...', total_pages]
-        elif page >= total_pages - 3:
-            page_range = [1, '...'] + list(range(total_pages - 4, total_pages + 1))
-        else:
-            page_range = [1, '...'] + list(range(page - 1, page + 2)) + ['...', total_pages]
+        # On error, ensure page_range is set
+        if not page_range:
+            page_range = [1]
     
     return templates.TemplateResponse("domains_list.html", {
         "request": request,

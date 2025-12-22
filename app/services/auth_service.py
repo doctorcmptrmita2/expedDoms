@@ -14,6 +14,10 @@ from app.models.user import User
 from app.core.config import get_settings
 
 
+# Get settings for JWT configuration
+settings = get_settings()
+
+
 # Simple password hashing using hashlib (no extra dependencies)
 def hash_password(password: str) -> str:
     """
@@ -49,10 +53,10 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 
-# JWT Configuration
-SECRET_KEY = "expireddomain-secret-key-change-in-production-2025"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+# JWT Configuration (from settings)
+SECRET_KEY = settings.JWT_SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

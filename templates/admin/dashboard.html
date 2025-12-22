@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SaaS Management{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-void">
+    <!-- Admin Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 bg-night border-r border-steel/50 z-40">
+        <div class="p-6 border-b border-steel/50">
+            <h1 class="text-2xl font-bold text-frost font-display">Admin Panel</h1>
+            <p class="text-sm text-mist mt-1">SaaS Management</p>
+        </div>
+        
+        <nav class="p-4 space-y-2">
+            <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/admin/users" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <span>Users</span>
+            </a>
+            <a href="/admin/subscriptions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <span>Subscriptions</span>
+            </a>
+            <a href="/admin/plans" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span>Plans</span>
+            </a>
+            <a href="/admin/payments" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Payments</span>
+            </a>
+            <a href="/admin/analytics" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span>Analytics</span>
+            </a>
+            <div class="pt-4 border-t border-steel/50 mt-4">
+                <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-xl text-mist hover:bg-steel/30 hover:text-frost transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>System Admin</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-frost font-display mb-2">Admin Dashboard</h1>
+            <p class="text-mist">SaaS platform overview and management</p>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Users -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-frost mb-1">{{ stats.total_users }}</div>
+                    <div class="text-sm text-mist">Total Users</div>
+                    <div class="mt-2 text-xs text-neon-green">
+                        +{{ stats.new_users_today }} today • +{{ stats.new_users_week }} this week
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active Subscriptions -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-neon-purple/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-purple/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-frost mb-1">{{ stats.active_subscriptions }}</div>
+                    <div class="text-sm text-mist">Active Subscriptions</div>
+                    <div class="mt-2 text-xs text-neon-green">
+                        ${{ "%.2f"|format(stats.mrr) }} MRR
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Revenue -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-green/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-frost mb-1">${{ "%.2f"|format(stats.total_revenue) }}</div>
+                    <div class="text-sm text-mist">Total Revenue</div>
+                    <div class="mt-2 text-xs text-neon-green">
+                        ${{ "%.2f"|format(stats.revenue_month) }} this month
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Domains -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-neon-pink/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-frost mb-1">{{ "{:,}"|format(stats.total_domains) }}</div>
+                    <div class="text-sm text-mist">Total Domains</div>
+                    <div class="mt-2 text-xs text-neon-green">
+                        {{ stats.domains_today }} dropped today
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Plan Distribution -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Subscription Breakdown -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-neon-purple/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <h2 class="text-xl font-bold text-frost mb-6">Subscription Breakdown</h2>
+                    <div class="space-y-4">
+                        {% for plan_stat in plan_stats %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full bg-neon-purple"></div>
+                                <span class="text-frost font-medium">{{ plan_stat.display_name }}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="text-mist">{{ plan_stat.count }} users</span>
+                                <span class="text-neon-cyan font-mono font-semibold">
+                                    {% if plan_stat.count > 0 %}
+                                        {{ "%.0f"|format((plan_stat.count / stats.active_subscriptions * 100) if stats.active_subscriptions > 0 else 0) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <h2 class="text-xl font-bold text-frost mb-6">Quick Stats</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-mist">Active Users</span>
+                            <span class="text-frost font-semibold">{{ stats.active_users }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-mist">Premium Users</span>
+                            <span class="text-frost font-semibold">{{ stats.premium_users }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-mist">Active TLDs</span>
+                            <span class="text-frost font-semibold">{{ stats.total_tlds }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-mist">API Keys</span>
+                            <span class="text-frost font-semibold">{{ stats.active_api_keys }} / {{ stats.total_api_keys }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent Users -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-frost">Recent Users</h2>
+                        <a href="/admin/users" class="text-sm text-neon-cyan hover:underline">View All</a>
+                    </div>
+                    <div class="space-y-3">
+                        {% for user in recent_users[:5] %}
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-void/50 border border-steel/30">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-neon-cyan/10 flex items-center justify-center">
+                                    <span class="text-neon-cyan font-semibold">{{ user.email[0].upper() }}</span>
+                                </div>
+                                <div>
+                                    <div class="text-frost font-medium">{{ user.email }}</div>
+                                    <div class="text-xs text-mist">{{ user.username }}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if user.is_premium %}
+                                <span class="px-2 py-1 rounded-lg bg-neon-purple/10 text-neon-purple text-xs font-medium">Premium</span>
+                                {% endif %}
+                                {% if user.is_admin %}
+                                <span class="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium">Admin</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Payments -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-6 overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-frost">Recent Payments</h2>
+                        <a href="/admin/payments" class="text-sm text-neon-cyan hover:underline">View All</a>
+                    </div>
+                    <div class="space-y-3">
+                        {% for payment in recent_payments[:5] %}
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-void/50 border border-steel/30">
+                            <div>
+                                <div class="text-frost font-medium">${{ "%.2f"|format(payment.amount) }}</div>
+                                <div class="text-xs text-mist">{{ payment.user.email if payment.user else "Unknown" }}</div>
+                            </div>
+                            <div>
+                                {% if payment.status == "succeeded" %}
+                                <span class="px-2 py-1 rounded-lg bg-neon-green/10 text-neon-green text-xs font-medium">Success</span>
+                                {% elif payment.status == "pending" %}
+                                <span class="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-medium">Pending</span>
+                                {% else %}
+                                <span class="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium">{{ payment.status }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

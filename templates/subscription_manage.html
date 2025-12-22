@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Subscription{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-frost font-display mb-2">Subscription Management</h1>
+        <p class="text-mist">Manage your subscription and billing</p>
+    </div>
+    
+    <!-- Current Plan -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-frost mb-2">Current Plan</h2>
+                <p class="text-mist">{{ plan.display_name }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold text-neon-cyan">${{ "%.2f"|format(plan.price_monthly) }}</div>
+                <div class="text-mist text-sm">per month</div>
+            </div>
+        </div>
+        
+        {% if subscription %}
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <div class="text-sm text-mist mb-1">Status</div>
+                <div class="text-frost font-medium">
+                    {% if subscription.status == "active" %}
+                    <span class="px-2 py-1 rounded-lg bg-neon-green/10 text-neon-green text-sm">Active</span>
+                    {% else %}
+                    <span class="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-sm">{{ subscription.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <div class="text-sm text-mist mb-1">Billing Cycle</div>
+                <div class="text-frost font-medium">{{ subscription.billing_cycle|title }}</div>
+            </div>
+            <div>
+                <div class="text-sm text-mist mb-1">Current Period</div>
+                <div class="text-frost font-medium">
+                    {{ subscription.current_period_start.strftime('%Y-%m-%d') if subscription.current_period_start else 'N/A' }}
+                    to
+                    {{ subscription.current_period_end.strftime('%Y-%m-%d') if subscription.current_period_end else 'N/A' }}
+                </div>
+            </div>
+            <div>
+                <div class="text-sm text-mist mb-1">Next Billing</div>
+                <div class="text-frost font-medium">{{ subscription.current_period_end.strftime('%Y-%m-%d') if subscription.current_period_end else 'N/A' }}</div>
+            </div>
+        </div>
+        
+        {% if subscription.cancel_at_period_end %}
+        <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 mb-6">
+            <p class="text-amber-400">⚠️ Your subscription will be canceled at the end of the current billing period.</p>
+        </div>
+        {% endif %}
+        
+        <div class="flex gap-4">
+            {% if not subscription.cancel_at_period_end %}
+            <form method="post" action="/api/v1/cancel" onsubmit="return confirm('Are you sure you want to cancel your subscription?')">
+                <button type="submit" class="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold rounded-xl transition-all">
+                    Cancel Subscription
+                </button>
+            </form>
+            {% endif %}
+            <a href="/pricing" class="px-6 py-3 bg-steel/50 hover:bg-steel text-frost font-semibold rounded-xl transition-all">
+                Change Plan
+            </a>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-mist mb-4">You're currently on the Free plan.</p>
+            <a href="/pricing" class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-void font-semibold rounded-xl hover:opacity-90 transition-all inline-block">
+                Upgrade Plan
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Plan Features -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8 mb-6">
+        <h2 class="text-xl font-bold text-frost mb-4">Plan Features</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for feature in (plan.features or []) %}
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-neon-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="text-frost">{{ feature }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Usage Stats -->
+    <div class="relative rounded-2xl bg-gradient-to-br from-night to-carbon border border-steel/50 p-8">
+        <h2 class="text-xl font-bold text-frost mb-4">Usage Statistics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                <div class="text-sm text-mist mb-1">Watchlists</div>
+                <div class="text-2xl font-bold text-frost">{{ plan_info.limits.watchlist[1] }}/{{ plan_info.limits.watchlist[2] if plan_info.limits.watchlist[2] > 0 else '∞' }}</div>
+            </div>
+            <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                <div class="text-sm text-mist mb-1">Favorites</div>
+                <div class="text-2xl font-bold text-frost">{{ plan_info.limits.favorites[1] }}/{{ plan_info.limits.favorites[2] if plan_info.limits.favorites[2] > 0 else '∞' }}</div>
+            </div>
+            <div class="p-4 rounded-xl bg-void/50 border border-steel/30">
+                <div class="text-sm text-mist mb-1">API Requests (Today)</div>
+                <div class="text-2xl font-bold text-frost">{{ plan_info.limits.api_daily[1] }}/{{ plan_info.limits.api_daily[2] if plan_info.limits.api_daily[2] > 0 else '∞' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

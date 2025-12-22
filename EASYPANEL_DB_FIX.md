@@ -124,3 +124,5 @@ DATABASE_URL=mysql+pymysql://root:password@mysql-1:3306/expireddomain
 ## 💡 İpucu
 
 EasyPanel'de MySQL servis detaylarında **Connection String** veya **Internal URL** gösteriliyorsa, onu kullanabilirsiniz. Sadece formatı `mysql+pymysql://` ile başlayacak şekilde düzenleyin.
+
+

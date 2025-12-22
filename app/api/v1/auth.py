@@ -2,9 +2,9 @@
 Authentication API endpoints.
 Handles user registration, login, and token management.
 """
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -17,9 +17,10 @@ from app.schemas.user import (
 from app.services.auth_service import (
     create_user, authenticate_user, get_user_by_id, get_user_by_email,
     create_access_token, decode_access_token, verify_password,
-    update_user_password, generate_password_reset_token, verify_password_reset_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    update_user_password, ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from app.services.email_service import EmailService
+from app.models.auth_token import EmailVerificationToken, PasswordResetToken
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -95,6 +96,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     Register a new user account.
     
     Returns JWT token on successful registration.
+    Sends verification email if email service is configured.
     """
     try:
         user = create_user(
@@ -109,6 +111,18 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+    
+    # Create and send verification email
+    try:
+        email_service = EmailService(db)
+        token = EmailVerificationToken.create_token(user.id)
+        db.add(token)
+        db.commit()
+        email_service.send_verification_email(user, token)
+    except Exception as e:
+        # Log error but don't fail registration
+        import logging
+        logging.error(f"Failed to send verification email: {e}")
     
     # Create access token
     access_token = create_access_token(
@@ -228,11 +242,19 @@ def request_password_reset(
     user = get_user_by_email(db, reset_data.email)
     
     if user:
-        # Generate reset token
-        token = generate_password_reset_token(user)
-        # TODO: Send email with reset link
-        # For now, just log it
-        print(f"Password reset token for {user.email}: {token}")
+        try:
+            # Create password reset token
+            token = PasswordResetToken.create_token(user.id)
+            db.add(token)
+            db.commit()
+            
+            # Send email
+            email_service = EmailService(db)
+            email_service.send_password_reset_email(user, token)
+        except Exception as e:
+            # Log error but don't reveal if user exists
+            import logging
+            logging.error(f"Failed to send password reset email: {e}")
     
     # Always return success to prevent email enumeration
     return {"message": "Şifre sıfırlama bağlantısı email adresinize gönderildi"}
@@ -246,16 +268,18 @@ def confirm_password_reset(
     """
     Confirm password reset with token.
     """
-    email = verify_password_reset_token(reset_data.token)
+    # Find token
+    token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == reset_data.token
+    ).first()
     
-    if not email:
+    if not token or not token.is_valid():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Geçersiz veya süresi dolmuş token"
         )
     
-    user = get_user_by_email(db, email)
-    
+    user = token.user
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -264,6 +288,11 @@ def confirm_password_reset(
     
     # Update password
     update_user_password(db, user, reset_data.new_password)
+    
+    # Mark token as used
+    token.is_used = True
+    token.used_at = datetime.utcnow()
+    db.commit()
     
     return {"message": "Şifreniz başarıyla sıfırlandı"}
 
@@ -287,6 +316,74 @@ def refresh_token(current_user: User = Depends(get_current_user_required)):
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UserRead.model_validate(current_user)
     )
+
+
+@router.get("/verify-email")
+def verify_email(
+    token: str = Query(..., description="Verification token"),
+    db: Session = Depends(get_db)
+):
+    """
+    Verify user email with token.
+    """
+    # Find token
+    verification_token = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.token == token
+    ).first()
+    
+    if not verification_token or not verification_token.is_valid():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçersiz veya süresi dolmuş token"
+        )
+    
+    user = verification_token.user
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kullanıcı bulunamadı"
+        )
+    
+    # Mark email as verified
+    user.is_verified = True
+    verification_token.is_used = True
+    verification_token.used_at = datetime.utcnow()
+    db.commit()
+    
+    return {"message": "Email adresiniz başarıyla doğrulandı"}
+
+
+@router.post("/resend-verification")
+def resend_verification_email(
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
+    """
+    Resend email verification email.
+    """
+    if current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email adresiniz zaten doğrulanmış"
+        )
+    
+    try:
+        email_service = EmailService(db)
+        token = EmailVerificationToken.create_token(current_user.id)
+        db.add(token)
+        db.commit()
+        email_service.send_verification_email(current_user, token)
+        
+        return {"message": "Doğrulama emaili gönderildi"}
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to send verification email: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email gönderilemedi"
+        )
+
+
 
 
 

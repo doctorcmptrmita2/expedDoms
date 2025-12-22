@@ -14,13 +14,17 @@
             <p class="text-mist">Domain takip panelinize hoş geldiniz</p>
         </div>
         <div class="flex items-center gap-3">
-            {% if user.is_premium %}
+            {% if subscription %}
             <span class="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-void text-sm font-semibold">
-                ⭐ Premium
+                ⭐ {{ plan.display_name }}
+            </span>
+            {% elif plan.name != 'free' %}
+            <span class="px-3 py-1 rounded-full bg-gradient-to-r from-neon-cyan to-neon-purple text-void text-sm font-semibold">
+                {{ plan.display_name }}
             </span>
             {% else %}
-            <a href="#" class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink text-void font-medium text-sm hover:opacity-90 transition-opacity">
-                Premium'a Yükselt
+            <a href="/pricing" class="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink text-void font-medium text-sm hover:opacity-90 transition-opacity">
+                Plan Yükselt
             </a>
             {% endif %}
             <a href="/logout" class="px-4 py-2 rounded-lg bg-steel/50 hover:bg-steel text-frost font-medium text-sm transition-colors">
@@ -43,7 +47,10 @@
                 <span class="text-mist font-medium">Watchlist</span>
             </div>
             <div class="text-3xl font-bold text-frost font-mono">{{ watchlist_count }}</div>
-            <p class="text-xs text-mist/60 mt-1">/ {% if user.is_premium %}20{% else %}3{% endif %} maksimum</p>
+            <p class="text-xs text-mist/60 mt-1">/ {{ watchlist_max }} maksimum</p>
+            <div class="mt-2 w-full bg-steel/50 rounded-full h-1.5">
+                <div class="bg-neon-cyan h-1.5 rounded-full" style="width: {{ (watchlist_count / watchlist_max * 100) | round }}%"></div>
+            </div>
         </div>
         
         <!-- Favorites -->
@@ -57,7 +64,12 @@
                 <span class="text-mist font-medium">Favoriler</span>
             </div>
             <div class="text-3xl font-bold text-frost font-mono">{{ favorite_count }}</div>
-            <p class="text-xs text-mist/60 mt-1">{% if user.is_premium %}sınırsız{% else %}/ 100 maksimum{% endif %}</p>
+            <p class="text-xs text-mist/60 mt-1">{% if favorites_max == -1 %}sınırsız{% else %}/ {{ favorites_max }} maksimum{% endif %}</p>
+            {% if favorites_max != -1 %}
+            <div class="mt-2 w-full bg-steel/50 rounded-full h-1.5">
+                <div class="bg-neon-pink h-1.5 rounded-full" style="width: {{ (favorite_count / favorites_max * 100) | round }}%"></div>
+            </div>
+            {% endif %}
         </div>
         
         <!-- Account Type -->
@@ -71,13 +83,19 @@
                 <span class="text-mist font-medium">Hesap Tipi</span>
             </div>
             <div class="text-xl font-bold text-frost">
-                {% if user.is_premium %}
-                <span class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Premium</span>
-                {% else %}
-                Ücretsiz
-                {% endif %}
+                <span class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{{ plan.display_name }}</span>
             </div>
+            {% if subscription %}
+            <p class="text-xs text-mist/60 mt-1">
+                {% if subscription.current_period_end %}
+                {{ subscription.current_period_end.strftime('%d.%m.%Y') }}'e kadar aktif
+                {% else %}
+                Aktif
+                {% endif %}
+            </p>
+            {% else %}
             <p class="text-xs text-mist/60 mt-1">{{ user.created_at.strftime('%d.%m.%Y') }} tarihinden beri</p>
+            {% endif %}
         </div>
         
         <!-- Quick Actions -->
@@ -208,6 +226,64 @@
         
     </div>
     
+    <!-- Subscription & Usage Info -->
+    <div class="mt-8 bg-gradient-to-br from-night to-carbon border border-steel/50 rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-frost mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Kullanım İstatistikleri
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-steel/30">
+                <div class="text-sm text-mist mb-1">Watchlist Kullanımı</div>
+                <div class="text-2xl font-bold text-frost">{{ watchlist_count }} / {{ watchlist_max }}</div>
+                <div class="mt-2 w-full bg-steel/50 rounded-full h-2">
+                    <div class="bg-neon-cyan h-2 rounded-full" style="width: {{ ((watchlist_count / watchlist_max * 100) if watchlist_max > 0 else 0) | round }}%"></div>
+                </div>
+            </div>
+            <div class="p-4 rounded-xl bg-steel/30">
+                <div class="text-sm text-mist mb-1">Favori Kullanımı</div>
+                <div class="text-2xl font-bold text-frost">
+                    {{ favorite_count }}{% if favorites_max != -1 %} / {{ favorites_max }}{% endif %}
+                </div>
+                {% if favorites_max != -1 %}
+                <div class="mt-2 w-full bg-steel/50 rounded-full h-2">
+                    <div class="bg-neon-pink h-2 rounded-full" style="width: {{ ((favorite_count / favorites_max * 100) if favorites_max > 0 else 0) | round }}%"></div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="p-4 rounded-xl bg-steel/30">
+                <div class="text-sm text-mist mb-1">API Keys</div>
+                {% if has_api_access %}
+                <div class="text-2xl font-bold text-frost">{{ api_keys_count }}</div>
+                <a href="/api-keys" class="text-xs text-neon-cyan hover:text-neon-purple mt-2 inline-block">Yönet →</a>
+                {% else %}
+                <div class="text-sm text-mist">Pro+ plan gerekli</div>
+                <a href="/pricing" class="text-xs text-neon-cyan hover:text-neon-purple mt-2 inline-block">Yükselt →</a>
+                {% endif %}
+            </div>
+        </div>
+        {% if can_export %}
+        <div class="mt-4 pt-4 border-t border-steel/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-frost">Export Özellikleri</div>
+                    <div class="text-xs text-mist">CSV ve Excel export aktif</div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="/api/v1/export/favorites/csv" class="px-3 py-1.5 rounded-lg bg-steel/50 hover:bg-steel text-frost text-sm transition-colors">
+                        CSV Export
+                    </a>
+                    <a href="/api/v1/export/favorites/excel" class="px-3 py-1.5 rounded-lg bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan text-sm transition-colors">
+                        Excel Export
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
     <!-- Quick Links -->
     <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
         <a href="/profile" class="p-4 rounded-xl bg-steel/30 hover:bg-steel/50 transition-colors text-center group">
@@ -239,6 +315,8 @@
     
 </div>
 {% endblock %}
+
+
 
 
 

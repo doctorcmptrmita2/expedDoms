@@ -28,6 +28,23 @@ class Settings(BaseSettings):
     # Data directory for zone files
     DATA_DIR: str = "./data"
     
+    # Email settings (for verification and password reset)
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str = "noreply@expireddomain.dev"
+    APP_URL: str = "http://localhost:8001"
+    
+    # Stripe settings (for payments)
+    STRIPE_SECRET_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
+    
+    # JWT Authentication
+    JWT_SECRET_KEY: str = "expireddomain-secret-key-change-in-production-2025"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
